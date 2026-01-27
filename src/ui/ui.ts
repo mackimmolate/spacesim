@@ -3,27 +3,22 @@ import type { Engine } from '../engine/Engine';
 
 export interface UIActions {
   onTogglePause: () => void;
-  onStepOnce: () => void;
   onCycleSpeed: () => void;
   onNewSeed: () => void;
   onResetCamera: () => void;
   onSave: () => void;
   onLoad: () => void;
   onReset: () => void;
-  onExport: () => void;
-  onImport: (payload: string) => void;
   onRegenerateVisuals: () => void;
   onGenerateCandidates: () => void;
   onHireCandidate: (candidateId: string) => void;
   onResolveEventChoice: (choiceId: 'A' | 'B') => void;
-  onSetDestination: (nodeId: string) => void;
   onAcceptContract: (contractId: string) => void;
   onStartContractAction: (contractId: string) => void;
 }
 
 export interface UIHandle {
   update: (state: GameState, engine: Engine) => void;
-  setExportText: (value: string) => void;
   setStatusMessage: (message: string) => void;
   setSectorMapVisible: (visible: boolean) => void;
   getSectorMapRect: () => DOMRect | null;
@@ -33,21 +28,31 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
 
+  const layout = document.createElement('div');
+  layout.className = 'ui-layout';
+
+  const leftColumn = document.createElement('div');
+  leftColumn.className = 'ui-column ui-column-left';
+
+  const rightColumn = document.createElement('div');
+  rightColumn.className = 'ui-column ui-column-right';
+
+  layout.appendChild(leftColumn);
+  layout.appendChild(rightColumn);
+
   const modeBanner = document.createElement('div');
   modeBanner.className = 'mode-banner';
   container.appendChild(modeBanner);
+  container.appendChild(layout);
 
   const crewPanel = document.createElement('div');
   crewPanel.className = 'crew-panel';
-  container.appendChild(crewPanel);
 
   const contractsPanel = document.createElement('div');
   contractsPanel.className = 'contracts-panel';
-  container.appendChild(contractsPanel);
 
   const sectorPanel = document.createElement('div');
   sectorPanel.className = 'sector-panel';
-  container.appendChild(sectorPanel);
 
   const modeIndicator = document.createElement('div');
   modeIndicator.className = 'mode-indicator';
@@ -69,14 +74,12 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
 
   const buttons: Array<{ label: string; onClick: () => void }> = [
     { label: 'Pause/Resume', onClick: actions.onTogglePause },
-    { label: 'Step', onClick: actions.onStepOnce },
     { label: 'Speed', onClick: actions.onCycleSpeed },
     { label: 'New Seed', onClick: actions.onNewSeed },
     { label: 'Reset Camera', onClick: actions.onResetCamera },
     { label: 'Save', onClick: actions.onSave },
     { label: 'Load', onClick: actions.onLoad },
     { label: 'Reset', onClick: actions.onReset },
-    { label: 'Export JSON', onClick: actions.onExport },
     { label: 'Regenerate Visuals', onClick: actions.onRegenerateVisuals }
   ];
 
@@ -88,22 +91,6 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     buttonRow.appendChild(button);
   });
 
-  const importArea = document.createElement('div');
-  importArea.className = 'import-area';
-
-  const textarea = document.createElement('textarea');
-  textarea.placeholder = 'Paste JSON here to import, or use Export to copy out.';
-
-  const importButton = document.createElement('button');
-  importButton.type = 'button';
-  importButton.textContent = 'Import JSON';
-  importButton.addEventListener('click', () => {
-    actions.onImport(textarea.value);
-  });
-
-  importArea.appendChild(textarea);
-  importArea.appendChild(importButton);
-
   const message = document.createElement('div');
   message.className = 'message';
 
@@ -113,7 +100,6 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   overlay.appendChild(controlsHint);
   overlay.appendChild(logContainer);
   overlay.appendChild(buttonRow);
-  overlay.appendChild(importArea);
   overlay.appendChild(message);
 
   const crewHeader = document.createElement('div');
@@ -160,13 +146,6 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const shipStats = document.createElement('div');
   shipStats.className = 'ship-stats';
 
-  const travelHeader = document.createElement('div');
-  travelHeader.className = 'contracts-subhead';
-  travelHeader.textContent = 'Destinations';
-
-  const travelList = document.createElement('div');
-  travelList.className = 'travel-list';
-
   const availableHeader = document.createElement('div');
   availableHeader.className = 'contracts-subhead';
   availableHeader.textContent = 'Available Here';
@@ -186,8 +165,6 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
 
   contractsPanel.appendChild(contractsHeader);
   contractsPanel.appendChild(shipStats);
-  contractsPanel.appendChild(travelHeader);
-  contractsPanel.appendChild(travelList);
   contractsPanel.appendChild(availableHeader);
   contractsPanel.appendChild(availableList);
   contractsPanel.appendChild(activeHeader);
@@ -209,16 +186,18 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   sectorPanel.appendChild(sectorViewport);
   sectorPanel.appendChild(sectorHint);
 
+  leftColumn.appendChild(overlay);
+  leftColumn.appendChild(sectorPanel);
+  rightColumn.appendChild(crewPanel);
+  rightColumn.appendChild(contractsPanel);
+
   let selectedCrewId: string | null = null;
   let selectedCandidateId: string | null = null;
   let lastCrewKey = '';
   let lastCandidateKey = '';
   let lastEventKey = '';
-  let lastTravelKey = '';
   let lastAvailableKey = '';
   let lastActiveKey = '__init__';
-
-  container.appendChild(overlay);
 
   function createNeedRow(label: string, min: number, max: number) {
     const row = document.createElement('div');
@@ -287,7 +266,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
       modeBanner.style.opacity = state.mode === 'Command' ? '1' : '0';
       controlsHint.textContent =
         state.mode === 'Command'
-          ? 'Pan: WASD/Arrows | Zoom: +/- | Exit: ESC | Map: M'
+          ? 'Pan: WASD/Arrows | Zoom: Wheel | Exit: ESC | Map: M'
           : 'Move: WASD/Arrows | Interact: E | Chair: E';
 
       const canTravel = state.mode === 'Command';
@@ -324,10 +303,13 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
           button.dataset.crewId = member.id;
           button.textContent = `${member.name} (${member.role}) - ${member.payRate} cr/day`;
           button.addEventListener('click', () => {
-            selectedCrewId = member.id;
-            selectedCandidateId = null;
-            crewDetails.scrollTo({ top: 0 });
-            crewDetails.textContent = '';
+            const isSelected = selectedCrewId === member.id;
+            selectedCrewId = isSelected ? null : member.id;
+            if (!isSelected) {
+              selectedCandidateId = null;
+              crewDetails.scrollTo({ top: 0 });
+              crewDetails.textContent = '';
+            }
           });
           rosterList.appendChild(button);
         });
@@ -361,8 +343,11 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
             info.dataset.candidateId = candidate.id;
             info.textContent = `${candidate.name} (${candidate.role}) - bonus ${candidate.signOnBonus} cr`;
             info.addEventListener('click', () => {
-              selectedCandidateId = candidate.id;
-              selectedCrewId = null;
+              const isSelected = selectedCandidateId === candidate.id;
+              selectedCandidateId = isSelected ? null : candidate.id;
+              if (!isSelected) {
+                selectedCrewId = null;
+              }
             });
 
             const hire = document.createElement('button');
@@ -472,29 +457,6 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         state.shipStats.scannerKits
       } | Survey ${state.shipStats.surveyData}`;
 
-      const travelKey = [
-        state.sectorShip.nodeId,
-        transit ? `${transit.fromId}:${transit.toId}` : 'docked',
-        state.sector.nodes.map((node) => node.id).join('|')
-      ].join('|');
-      if (travelKey !== lastTravelKey) {
-        travelList.innerHTML = '';
-        state.sector.nodes.forEach((node) => {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'travel-entry';
-          button.dataset.nodeId = node.id;
-          button.textContent = node.name;
-          button.addEventListener('click', () => actions.onSetDestination(node.id));
-          travelList.appendChild(button);
-        });
-        lastTravelKey = travelKey;
-      }
-      travelList.querySelectorAll<HTMLButtonElement>('button.travel-entry').forEach((button) => {
-        const nodeId = button.dataset.nodeId ?? '';
-        button.disabled = Boolean(state.sectorShip.inTransit) || nodeId === state.sectorShip.nodeId;
-      });
-
       const availableContracts = state.contracts.contracts.filter(
         (contract) => contract.status === 'Available' && contract.fromNodeId === state.sectorShip.nodeId
       );
@@ -580,9 +542,6 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
           tracker.textContent = `Deploy scanner at ${targetName(contract.payload.targetNodeId)}.`;
         }
       }
-    },
-    setExportText: (value: string) => {
-      textarea.value = value;
     },
     setStatusMessage: (value: string) => {
       message.textContent = value;

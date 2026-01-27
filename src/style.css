@@ -36,10 +36,28 @@ body {
   pointer-events: none;
 }
 
-.overlay {
+.ui-layout {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  inset: 16px;
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) 1fr minmax(320px, 380px);
+  gap: 16px;
+  pointer-events: none;
+}
+
+.ui-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.ui-column > * {
+  pointer-events: auto;
+}
+
+.overlay {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -47,16 +65,20 @@ body {
   background: rgba(8, 12, 24, 0.75);
   border: 1px solid rgba(120, 160, 255, 0.2);
   border-radius: 12px;
-  max-width: 360px;
+  width: 100%;
+  max-height: 100%;
   backdrop-filter: blur(6px);
   z-index: 1;
+  overflow: auto;
+  min-height: 0;
   pointer-events: auto;
 }
 
 .mode-banner {
   position: absolute;
-  top: 18px;
-  right: 18px;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
   padding: 6px 12px;
   font-size: 0.8rem;
   letter-spacing: 0.04em;
@@ -70,11 +92,10 @@ body {
 }
 
 .crew-panel {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 360px;
-  max-height: calc(100vh - 32px);
+  position: relative;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
   padding: 12px;
   display: grid;
@@ -88,11 +109,9 @@ body {
 }
 
 .contracts-panel {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  width: 360px;
-  max-height: 45vh;
+  position: relative;
+  width: 100%;
+  max-height: clamp(220px, 38vh, 360px);
   overflow: auto;
   padding: 12px;
   display: grid;
@@ -106,10 +125,9 @@ body {
 }
 
 .sector-panel {
-  position: absolute;
-  left: 16px;
-  bottom: 16px;
-  width: 260px;
+  position: relative;
+  width: 100%;
+  margin-top: auto;
   display: grid;
   gap: 6px;
   color: #cbd5f4;
@@ -129,8 +147,8 @@ body {
 }
 
 .sector-viewport {
-  width: 260px;
-  height: 210px;
+  width: 100%;
+  height: 220px;
 }
 
 .sector-hint {
@@ -155,14 +173,9 @@ body {
   color: #cbd5f4;
 }
 
-.travel-list,
 .contracts-list {
   display: grid;
   gap: 6px;
-}
-
-.travel-entry {
-  text-align: left;
 }
 
 .contract-row {
@@ -350,6 +363,9 @@ body {
   gap: 4px;
   font-size: 0.72rem;
   color: #a7b5e8;
+  max-height: 160px;
+  overflow: auto;
+  padding-right: 4px;
 }
 
 .status {
@@ -377,24 +393,18 @@ button:hover {
   background: #273861;
 }
 
-.import-area {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-textarea {
-  min-height: 120px;
-  background: rgba(2, 6, 20, 0.9);
-  color: #e8eef9;
-  border: 1px solid rgba(120, 160, 255, 0.3);
-  border-radius: 8px;
-  padding: 6px;
-  font-size: 0.75rem;
-  resize: vertical;
-}
-
 .message {
   font-size: 0.75rem;
   color: #9bb1ff;
+}
+
+@media (max-width: 980px) {
+  .ui-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .sector-viewport {
+    height: 200px;
+  }
 }

@@ -62,7 +62,6 @@ function setDestination(nodeId: string): void {
 
 const ui = createUI(uiWrapper, {
   onTogglePause: () => inputController.signalTogglePause(),
-  onStepOnce: () => inputController.signalStepOnce(),
   onCycleSpeed: () => inputController.signalCycleSpeed(),
   onNewSeed: () => inputController.signalNewSeed(),
   onResetCamera: () => inputController.signalResetCamera(),
@@ -88,23 +87,6 @@ const ui = createUI(uiWrapper, {
     resetState(true);
     ui.setStatusMessage('Reset to initial state.');
   },
-  onExport: () => {
-    ui.setExportText(serializeSaveState(state));
-    ui.setStatusMessage('Exported current state to textarea.');
-  },
-  onImport: (payload: string) => {
-    if (!payload.trim()) {
-      ui.setStatusMessage('Paste JSON before importing.');
-      return;
-    }
-    try {
-      engine.resetClock();
-      setState(deserializeSaveState(payload));
-      ui.setStatusMessage('Imported state from JSON.');
-    } catch (error) {
-      ui.setStatusMessage(`Import failed: ${(error as Error).message}`);
-    }
-  },
   onRegenerateVisuals: () => inputController.signalRegenerateVisuals(),
   onGenerateCandidates: () => {
     setState(regenerateCandidates(state));
@@ -115,16 +97,13 @@ const ui = createUI(uiWrapper, {
   onResolveEventChoice: (choiceId: 'A' | 'B') => {
     setState(resolveEvent(state, choiceId));
   },
-  onSetDestination: (nodeId: string) => {
-    setDestination(nodeId);
-  },
   onAcceptContract: (contractId: string) => {
     setState(acceptContract(state, contractId));
   },
   onStartContractAction: (contractId: string) => {
     setState(startContractOperation(state, contractId));
   }
-  });
+});
 
 renderer.setSectorClickHandler((nodeId) => {
   setDestination(nodeId);

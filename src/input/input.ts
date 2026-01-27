@@ -49,6 +49,8 @@ export function createInputController(): {
   const pressedKeys = new Set<string>();
   let pendingInteract = false;
   let pendingExitCommand = false;
+  let wheelSteps = 0;
+  const maxWheelSteps = 12;
 
   function mergeFlag(flag: keyof ControlInput): void {
     pendingControls = { ...pendingControls, [flag]: true };
@@ -62,8 +64,16 @@ export function createInputController(): {
 
     simInput.cameraPan = { x: panX, y: panY };
     simInput.move = { x: panX, y: panY };
-    simInput.zoomIn = pressedKeys.has('Equal') || pressedKeys.has('NumpadAdd');
-    simInput.zoomOut = pressedKeys.has('Minus') || pressedKeys.has('NumpadSubtract');
+    let wheelZoomIn = false;
+    let wheelZoomOut = false;
+    if (wheelSteps !== 0) {
+      wheelZoomIn = wheelSteps > 0;
+      wheelZoomOut = wheelSteps < 0;
+      wheelSteps += wheelSteps > 0 ? -1 : 1;
+    }
+
+    simInput.zoomIn = pressedKeys.has('Equal') || pressedKeys.has('NumpadAdd') || wheelZoomIn;
+    simInput.zoomOut = pressedKeys.has('Minus') || pressedKeys.has('NumpadSubtract') || wheelZoomOut;
     simInput.resetCamera = pendingControls.resetCamera;
     simInput.interact = pendingInteract;
     simInput.exitCommand = pendingExitCommand;
@@ -129,8 +139,32 @@ export function createInputController(): {
     pressedKeys.delete(event.code);
   }
 
+  function isScrollTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+    const container = target.closest('.overlay, .crew-panel, .contracts-panel');
+    if (!container) {
+      return false;
+    }
+    return container.scrollHeight > container.clientHeight;
+  }
+
+  function onWheel(event: WheelEvent): void {
+    if (isScrollTarget(event.target)) {
+      return;
+    }
+    if (event.deltaY === 0) {
+      return;
+    }
+    const direction = event.deltaY > 0 ? -1 : 1;
+    wheelSteps = Math.max(-maxWheelSteps, Math.min(maxWheelSteps, wheelSteps + direction));
+    event.preventDefault();
+  }
+
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
+  window.addEventListener('wheel', onWheel, { passive: false });
 
   return {
     consume,

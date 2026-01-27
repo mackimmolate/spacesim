@@ -54,11 +54,12 @@ export function generateSector(seed: string): SectorState {
     const radius = MAP_RADIUS * (0.35 + radiusRoll.value * 0.65);
     const x = Math.cos(angle) * radius;
     const y = Math.sin(angle) * radius;
-    const factionId = NODE_TYPES[i % NODE_TYPES.length] === 'field' ? undefined : FACTION_IDS[i % FACTION_IDS.length];
+    const type = NODE_TYPES[i % NODE_TYPES.length]!;
+    const factionId = type === 'field' ? undefined : FACTION_IDS[i % FACTION_IDS.length]!;
     nodes.push({
       id: `node-${i}`,
-      name: NODE_NAMES[i % NODE_NAMES.length],
-      type: NODE_TYPES[i % NODE_TYPES.length],
+      name: NODE_NAMES[i % NODE_NAMES.length]!,
+      type,
       x,
       y,
       factionId
@@ -67,8 +68,8 @@ export function generateSector(seed: string): SectorState {
 
   const edges: SectorEdge[] = [];
   for (let i = 0; i < nodes.length; i += 1) {
-    const from = nodes[i];
-    const to = nodes[(i + 1) % nodes.length];
+    const from = nodes[i]!;
+    const to = nodes[(i + 1) % nodes.length]!;
     edges.push({
       id: `edge-${from.id}-${to.id}`,
       fromId: from.id,
@@ -80,9 +81,10 @@ export function generateSector(seed: string): SectorState {
   for (let i = 0; i < nodes.length; i += 1) {
     const roll = nextInt(rng, nodes.length);
     rng = roll.nextState;
-    const target = nodes[roll.value];
-    if (target.id !== nodes[i].id) {
-      const from = nodes[i];
+    const target = nodes[roll.value]!;
+    const current = nodes[i]!;
+    if (target.id !== current.id) {
+      const from = current;
       const to = target;
       const id = `edge-${from.id}-${to.id}`;
       if (!edges.find((edge) => edge.id === id || edge.id === `edge-${to.id}-${from.id}`)) {

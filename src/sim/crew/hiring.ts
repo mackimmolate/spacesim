@@ -1,6 +1,6 @@
 import type { GameState } from '../types';
 import { generateCandidates } from './generate';
-import type { Candidate, CrewMember } from './types';
+import type { CrewMember } from './types';
 import { pushLog } from '../log';
 
 const CANDIDATE_COUNT = 4;

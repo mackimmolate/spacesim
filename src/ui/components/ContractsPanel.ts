@@ -194,7 +194,7 @@ export class ContractsPanel extends UIComponent<ContractsPanelProps> {
       return;
     }
 
-    const contract = activeContracts[0];
+    const contract = activeContracts[0]!;
     const targetName = (nodeId: string): string =>
       state.sector.nodes.find((node) => node.id === nodeId)?.name ?? nodeId;
 

@@ -52,7 +52,6 @@ export class Renderer {
       background: 0x050914,
       antialias: false
     });
-    this.app.renderer.roundPixels = true;
 
     container.appendChild(this.app.view as HTMLCanvasElement);
     (this.app.view as HTMLCanvasElement).addEventListener('pointerdown', this.onPointerDown);

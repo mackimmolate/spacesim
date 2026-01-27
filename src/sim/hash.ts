@@ -60,7 +60,7 @@ export function hashState(state: GameState): string {
     state.contracts.contracts
       .map((contract) => `${contract.id}:${contract.status}:${contract.type}`)
       .join(';'),
-    state.contracts.activeOperation ? `${state.contracts.activeOperation.contractId}:${state.contracts.activeOperation.remainingTicks}` : 'no-op'
+    state.contracts.activeOperation ? `${state.contracts.activeOperation.contractId}:${state.contracts.activeOperation.remainingTicks}` : 'no-op',
     state.ship.position.x.toFixed(6),
     state.ship.position.y.toFixed(6),
     state.ship.velocity.x.toFixed(6),

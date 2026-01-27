@@ -1,6 +1,20 @@
+import type { GameMode } from './modes';
+import type { Needs } from './needs';
+
 export interface Vec2 {
   x: number;
   y: number;
+}
+
+export interface PlayerState {
+  roomId: string;
+  x: number;
+  y: number;
+  moveCooldown: number;
+}
+
+export interface InventoryState {
+  rations: number;
 }
 
 export interface GameState {
@@ -9,6 +23,11 @@ export interface GameState {
   rngState: number;
   tick: number;
   time: number;
+  mode: GameMode;
+  player: PlayerState;
+  inventory: InventoryState;
+  needs: Needs;
+  log: string[];
   ship: {
     position: Vec2;
     velocity: Vec2;
@@ -31,4 +50,7 @@ export interface SimInput {
   zoomIn: boolean;
   zoomOut: boolean;
   resetCamera: boolean;
+  move: Vec2;
+  interact: boolean;
+  exitCommand: boolean;
 }

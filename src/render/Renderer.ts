@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import type { GameState } from '../sim/types';
+import { GameMode } from '../sim/modes';
 import {
   CHUNK_SIZE,
   generateSpaceDescriptor,
@@ -8,6 +9,7 @@ import {
   type SpaceDescriptor,
   type StarLayerSpec
 } from './gen/spaceGen';
+import { InteriorRenderer } from './avatar/InteriorRenderer';
 
 interface StarLayerRuntime {
   spec: StarLayerSpec;
@@ -27,8 +29,10 @@ export class Renderer {
   private readonly planetContainer: PIXI.Container;
   private readonly planets: PlanetRuntime[] = [];
   private readonly ship: PIXI.Graphics;
+  private readonly interior: InteriorRenderer;
   private currentSeed = '';
   private descriptor: SpaceDescriptor | null = null;
+  private lastMode: GameMode | null = null;
 
   constructor(container: HTMLElement) {
     PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
@@ -53,6 +57,10 @@ export class Renderer {
 
     this.app.stage.sortableChildren = true;
     this.app.stage.addChild(this.planetContainer, this.ship);
+
+    this.interior = new InteriorRenderer(this.app);
+    this.interior.container.zIndex = 5;
+    this.app.stage.addChild(this.interior.container);
   }
 
   private rebuildSpace(seed: string): void {
@@ -229,34 +237,50 @@ export class Renderer {
     const height = this.app.renderer.height;
     const scale = this.baseScale * state.camera.zoom;
 
-    this.starLayers.forEach((layer) => {
-      layer.container.scale.set(scale, scale);
-      layer.container.position.set(
-        width / 2 - state.camera.x * scale * layer.spec.parallax,
-        height / 2 - state.camera.y * scale * layer.spec.parallax
-      );
-      this.updateStarChunks(
-        layer,
-        state.camera.x * layer.spec.parallax,
-        state.camera.y * layer.spec.parallax,
-        width / scale,
-        height / scale
-      );
-    });
+    if (state.mode !== this.lastMode) {
+      const isCommand = state.mode === GameMode.Command;
+      this.starLayers.forEach((layer) => {
+        layer.container.visible = isCommand;
+      });
+      this.planetContainer.visible = isCommand;
+      this.ship.visible = isCommand;
+      this.interior.container.visible = !isCommand;
+      this.app.renderer.backgroundColor = isCommand ? 0x050914 : 0x0b0f1a;
+      this.lastMode = state.mode;
+    }
 
-    this.planets.forEach(({ sprite, descriptor }) => {
-      sprite.scale.set(state.camera.zoom, state.camera.zoom);
-      sprite.position.set(
-        width / 2 + (descriptor.position.x - state.camera.x * descriptor.parallax) * scale,
-        height / 2 + (descriptor.position.y - state.camera.y * descriptor.parallax) * scale
-      );
-    });
+    if (state.mode === GameMode.Command) {
+      this.starLayers.forEach((layer) => {
+        layer.container.scale.set(scale, scale);
+        layer.container.position.set(
+          width / 2 - state.camera.x * scale * layer.spec.parallax,
+          height / 2 - state.camera.y * scale * layer.spec.parallax
+        );
+        this.updateStarChunks(
+          layer,
+          state.camera.x * layer.spec.parallax,
+          state.camera.y * layer.spec.parallax,
+          width / scale,
+          height / scale
+        );
+      });
 
-    this.ship.scale.set(state.camera.zoom, state.camera.zoom);
-    this.ship.position.set(
-      width / 2 + (state.ship.position.x - state.camera.x) * scale,
-      height / 2 + (state.ship.position.y - state.camera.y) * scale
-    );
+      this.planets.forEach(({ sprite, descriptor }) => {
+        sprite.scale.set(state.camera.zoom, state.camera.zoom);
+        sprite.position.set(
+          width / 2 + (descriptor.position.x - state.camera.x * descriptor.parallax) * scale,
+          height / 2 + (descriptor.position.y - state.camera.y * descriptor.parallax) * scale
+        );
+      });
+
+      this.ship.scale.set(state.camera.zoom, state.camera.zoom);
+      this.ship.position.set(
+        width / 2 + (state.ship.position.x - state.camera.x) * scale,
+        height / 2 + (state.ship.position.y - state.camera.y) * scale
+      );
+    } else {
+      this.interior.render(state, width, height);
+    }
   }
 
   destroy(): void {

@@ -6,6 +6,7 @@ import { createInitialState } from './sim/state';
 import { advanceState } from './sim/tick';
 import { deserializeSaveState, serializeSaveState } from './sim/save';
 import { createUI } from './ui/ui';
+import { GameMode } from './sim/modes';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) {
@@ -117,8 +118,28 @@ function handleControls(now: number): void {
     ui.setStatusMessage('Regenerated visuals with a new render seed.');
   }
 
-  engine.update(now, snapshot.sim, (dt, input) => {
-    setState(advanceState(state, dt, input));
+  const baseInput = { ...snapshot.sim };
+  if (state.mode === GameMode.Avatar) {
+    baseInput.cameraPan = { x: 0, y: 0 };
+    baseInput.zoomIn = false;
+    baseInput.zoomOut = false;
+    baseInput.resetCamera = false;
+  } else {
+    baseInput.move = { x: 0, y: 0 };
+  }
+
+  let pendingInteract = baseInput.interact;
+  let pendingExit = baseInput.exitCommand;
+
+  engine.update(now, baseInput, (dt) => {
+    const tickInput = {
+      ...baseInput,
+      interact: pendingInteract,
+      exitCommand: pendingExit
+    };
+    pendingInteract = false;
+    pendingExit = false;
+    setState(advanceState(state, dt, tickInput));
   });
 }
 

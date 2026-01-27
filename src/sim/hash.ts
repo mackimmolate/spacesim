@@ -16,13 +16,25 @@ export function hashState(state: GameState): string {
     state.rngState.toString(16),
     state.tick.toString(),
     state.time.toFixed(6),
+    state.mode,
+    state.player.roomId,
+    state.player.x.toString(),
+    state.player.y.toString(),
+    state.player.moveCooldown.toFixed(3),
+    state.inventory.rations.toString(),
+    state.needs.hunger.toFixed(3),
+    state.needs.thirst.toFixed(3),
+    state.needs.fatigue.toFixed(3),
+    state.needs.stress.toFixed(3),
+    state.needs.morale.toFixed(3),
     state.ship.position.x.toFixed(6),
     state.ship.position.y.toFixed(6),
     state.ship.velocity.x.toFixed(6),
     state.ship.velocity.y.toFixed(6),
     state.camera.x.toFixed(3),
     state.camera.y.toFixed(3),
-    state.camera.zoom.toFixed(3)
+    state.camera.zoom.toFixed(3),
+    state.log.join('~')
   ];
   return hashString(parts.join('|'));
 }

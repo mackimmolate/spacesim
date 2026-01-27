@@ -38,9 +38,14 @@ export function createInputController(): {
     cameraPan: { x: 0, y: 0 },
     zoomIn: false,
     zoomOut: false,
-    resetCamera: false
+    resetCamera: false,
+    move: { x: 0, y: 0 },
+    interact: false,
+    exitCommand: false
   };
   const pressedKeys = new Set<string>();
+  let pendingInteract = false;
+  let pendingExitCommand = false;
 
   function mergeFlag(flag: keyof ControlInput): void {
     pendingControls = { ...pendingControls, [flag]: true };
@@ -53,9 +58,12 @@ export function createInputController(): {
       Number(pressedKeys.has('ArrowUp') || pressedKeys.has('KeyW'));
 
     simInput.cameraPan = { x: panX, y: panY };
+    simInput.move = { x: panX, y: panY };
     simInput.zoomIn = pressedKeys.has('Equal') || pressedKeys.has('NumpadAdd');
     simInput.zoomOut = pressedKeys.has('Minus') || pressedKeys.has('NumpadSubtract');
     simInput.resetCamera = pendingControls.resetCamera;
+    simInput.interact = pendingInteract;
+    simInput.exitCommand = pendingExitCommand;
 
     const snapshot: InputSnapshot = {
       controls: pendingControls,
@@ -64,10 +72,15 @@ export function createInputController(): {
         cameraPan: { ...simInput.cameraPan },
         zoomIn: simInput.zoomIn,
         zoomOut: simInput.zoomOut,
-        resetCamera: simInput.resetCamera
+        resetCamera: simInput.resetCamera,
+        move: { ...simInput.move },
+        interact: simInput.interact,
+        exitCommand: simInput.exitCommand
       }
     };
     pendingControls = { ...EMPTY_CONTROLS };
+    pendingInteract = false;
+    pendingExitCommand = false;
     return snapshot;
   }
 
@@ -83,7 +96,6 @@ export function createInputController(): {
         mergeFlag('stepOnce');
         break;
       case 'KeyC':
-      case 'KeyS':
         mergeFlag('cycleSpeed');
         break;
       case 'KeyN':
@@ -91,6 +103,16 @@ export function createInputController(): {
         break;
       case 'KeyR':
         mergeFlag('resetCamera');
+        break;
+      case 'KeyE':
+        if (!event.repeat) {
+          pendingInteract = true;
+        }
+        break;
+      case 'Escape':
+        if (!event.repeat) {
+          pendingExitCommand = true;
+        }
         break;
       default:
         break;

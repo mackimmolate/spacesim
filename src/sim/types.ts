@@ -1,6 +1,9 @@
 import type { GameMode } from './modes';
 import type { Needs } from './needs';
 import type { CompanyState } from './company/types';
+import type { SectorState, ShipState, ShipStats } from './sector/types';
+import type { FactionState } from './factions/types';
+import type { ContractsState } from './contracts/types';
 
 export interface Vec2 {
   x: number;
@@ -30,6 +33,11 @@ export interface GameState {
   needs: Needs;
   log: string[];
   company: CompanyState;
+  sector: SectorState;
+  sectorShip: ShipState;
+  shipStats: ShipStats;
+  factions: FactionState;
+  contracts: ContractsState;
   ship: {
     position: Vec2;
     velocity: Vec2;

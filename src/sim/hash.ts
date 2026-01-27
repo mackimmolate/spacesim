@@ -45,6 +45,22 @@ export function hashState(state: GameState): string {
       .join(';'),
     state.company.candidates.map((candidate) => candidate.id).join(';'),
     state.company.pendingEvent ? state.company.pendingEvent.id : 'no-event',
+    state.sector.nodes.length.toString(),
+    state.sector.edges.length.toString(),
+    state.sectorShip.nodeId,
+    state.sectorShip.inTransit ? `${state.sectorShip.inTransit.fromId}-${state.sectorShip.inTransit.toId}-${state.sectorShip.inTransit.progress01.toFixed(3)}` : 'no-transit',
+    state.shipStats.fuel.toFixed(2),
+    state.shipStats.hull.toFixed(2),
+    state.shipStats.towCapacity.toString(),
+    state.shipStats.salvageRigLevel.toString(),
+    state.shipStats.scannerKits.toString(),
+    state.shipStats.salvageParts.toString(),
+    state.shipStats.surveyData.toString(),
+    state.factions.factions.map((faction) => `${faction.id}:${faction.reputation}`).join(';'),
+    state.contracts.contracts
+      .map((contract) => `${contract.id}:${contract.status}:${contract.type}`)
+      .join(';'),
+    state.contracts.activeOperation ? `${state.contracts.activeOperation.contractId}:${state.contracts.activeOperation.remainingTicks}` : 'no-op'
     state.ship.position.x.toFixed(6),
     state.ship.position.y.toFixed(6),
     state.ship.velocity.x.toFixed(6),

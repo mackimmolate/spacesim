@@ -3,10 +3,14 @@ import type { GameState, SimInput, Vec2 } from './types';
 import { GameMode } from './modes';
 import { createInitialNeeds } from './needs';
 import { generateCandidates } from './crew/generate';
+import { generateSector } from './sector/map';
+import { createInitialFactions } from './factions/factions';
 
 export const DEFAULT_IMPULSE: Vec2 = { x: 0, y: 0 };
 
 export function createInitialState(seed: string): GameState {
+  const sector = generateSector(seed);
+  const startNode = sector.nodes.find((node) => node.type === 'station') ?? sector.nodes[0];
   return {
     seed,
     renderSeed: seed,
@@ -34,6 +38,29 @@ export function createInitialState(seed: string): GameState {
       hiringSeed: 0,
       opsEfficiency: 1,
       pendingEvent: null
+    },
+    sector,
+    sectorShip: {
+      nodeId: startNode.id
+    },
+    shipStats: {
+      fuel: 120,
+      fuelMax: 120,
+      hull: 100,
+      hullMax: 100,
+      towCapacity: 80,
+      salvageRigLevel: 1,
+      scannerKits: 2,
+      salvageParts: 0,
+      surveyData: 0
+    },
+    factions: {
+      factions: createInitialFactions()
+    },
+    contracts: {
+      contracts: [],
+      activeOperation: null,
+      lastRefreshTick: -1
     },
     ship: {
       position: { x: 0, y: 0 },

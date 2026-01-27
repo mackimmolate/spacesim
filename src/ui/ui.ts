@@ -16,6 +16,9 @@ export interface UIActions {
   onGenerateCandidates: () => void;
   onHireCandidate: (candidateId: string) => void;
   onResolveEventChoice: (choiceId: 'A' | 'B') => void;
+  onSetDestination: (nodeId: string) => void;
+  onAcceptContract: (contractId: string) => void;
+  onStartContractAction: (contractId: string) => void;
 }
 
 export interface UIHandle {
@@ -35,6 +38,10 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const crewPanel = document.createElement('div');
   crewPanel.className = 'crew-panel';
   container.appendChild(crewPanel);
+
+  const contractsPanel = document.createElement('div');
+  contractsPanel.className = 'contracts-panel';
+  container.appendChild(contractsPanel);
 
   const modeIndicator = document.createElement('div');
   modeIndicator.className = 'mode-indicator';
@@ -139,6 +146,47 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   crewPanel.appendChild(generateButton);
   crewPanel.appendChild(candidateList);
   crewPanel.appendChild(eventPanel);
+
+  const contractsHeader = document.createElement('div');
+  contractsHeader.className = 'contracts-header';
+  contractsHeader.textContent = 'Contracts';
+
+  const shipStats = document.createElement('div');
+  shipStats.className = 'ship-stats';
+
+  const travelHeader = document.createElement('div');
+  travelHeader.className = 'contracts-subhead';
+  travelHeader.textContent = 'Destinations';
+
+  const travelList = document.createElement('div');
+  travelList.className = 'travel-list';
+
+  const availableHeader = document.createElement('div');
+  availableHeader.className = 'contracts-subhead';
+  availableHeader.textContent = 'Available Here';
+
+  const availableList = document.createElement('div');
+  availableList.className = 'contracts-list';
+
+  const activeHeader = document.createElement('div');
+  activeHeader.className = 'contracts-subhead';
+  activeHeader.textContent = 'Active';
+
+  const activeList = document.createElement('div');
+  activeList.className = 'contracts-list';
+
+  const tracker = document.createElement('div');
+  tracker.className = 'contract-tracker';
+
+  contractsPanel.appendChild(contractsHeader);
+  contractsPanel.appendChild(shipStats);
+  contractsPanel.appendChild(travelHeader);
+  contractsPanel.appendChild(travelList);
+  contractsPanel.appendChild(availableHeader);
+  contractsPanel.appendChild(availableList);
+  contractsPanel.appendChild(activeHeader);
+  contractsPanel.appendChild(activeList);
+  contractsPanel.appendChild(tracker);
 
   let selectedCrewId: string | null = null;
   let selectedCandidateId: string | null = null;
@@ -357,7 +405,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         : '';
       if (eventKey !== lastEventKey) {
         eventPanel.innerHTML = '';
-        if (state.company.pendingEvent) {
+      if (state.company.pendingEvent) {
           const title = document.createElement('div');
           title.className = 'event-title';
           title.textContent = state.company.pendingEvent.title;
@@ -381,6 +429,100 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
           eventPanel.classList.add('event-enter');
         }
         lastEventKey = eventKey;
+      }
+
+      const currentNode = state.sector.nodes.find((node) => node.id === state.sectorShip.nodeId);
+      const transit = state.sectorShip.inTransit;
+      const locationLabel = transit
+        ? `In Transit → ${state.sector.nodes.find((node) => node.id === transit.toId)?.name ?? transit.toId}`
+        : `Docked: ${currentNode?.name ?? state.sectorShip.nodeId}`;
+      shipStats.textContent = `${locationLabel} | Fuel ${state.shipStats.fuel.toFixed(0)}/${
+        state.shipStats.fuelMax
+      } | Hull ${state.shipStats.hull.toFixed(0)}/${state.shipStats.hullMax} | Tow ${
+        state.shipStats.towCapacity
+      } | Salvage ${state.shipStats.salvageRigLevel} | Scanners ${
+        state.shipStats.scannerKits
+      } | Survey ${state.shipStats.surveyData}`;
+
+      travelList.innerHTML = '';
+      state.sector.nodes.forEach((node) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'travel-entry';
+        button.textContent = node.name;
+        button.disabled = Boolean(state.sectorShip.inTransit) || node.id === state.sectorShip.nodeId;
+        button.addEventListener('click', () => actions.onSetDestination(node.id));
+        travelList.appendChild(button);
+      });
+
+      const availableContracts = state.contracts.contracts.filter(
+        (contract) => contract.status === 'Available' && contract.fromNodeId === state.sectorShip.nodeId
+      );
+      availableList.innerHTML = '';
+      availableContracts.forEach((contract) => {
+        const row = document.createElement('div');
+        row.className = 'contract-row';
+        const label = document.createElement('div');
+        label.className = 'contract-info';
+        label.textContent = `${contract.type} — ${contract.rewardCredits} cr`;
+        const accept = document.createElement('button');
+        accept.type = 'button';
+        accept.textContent = 'Accept';
+        accept.addEventListener('click', () => actions.onAcceptContract(contract.id));
+        row.appendChild(label);
+        row.appendChild(accept);
+        availableList.appendChild(row);
+      });
+      if (availableContracts.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'contract-empty';
+        empty.textContent = 'No contracts available here.';
+        availableList.appendChild(empty);
+      }
+
+      const activeContracts = state.contracts.contracts.filter(
+        (contract) => contract.status === 'Accepted' || contract.status === 'InProgress'
+      );
+      activeList.innerHTML = '';
+      activeContracts.forEach((contract) => {
+        const row = document.createElement('div');
+        row.className = 'contract-row';
+        const label = document.createElement('div');
+        label.className = 'contract-info';
+        label.textContent = `${contract.type} (${contract.status})`;
+        row.appendChild(label);
+        if (contract.status === 'Accepted') {
+          const action = document.createElement('button');
+          action.type = 'button';
+          action.textContent = contract.type === 'InstallScanner' ? 'Deploy' : contract.type === 'Salvage' ? 'Salvage' : 'Begin Tow';
+          action.addEventListener('click', () => actions.onStartContractAction(contract.id));
+          row.appendChild(action);
+        }
+        activeList.appendChild(row);
+      });
+      if (activeContracts.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'contract-empty';
+        empty.textContent = 'No active contracts.';
+        activeList.appendChild(empty);
+      }
+
+      tracker.textContent = '';
+      if (activeContracts.length > 0) {
+        const contract = activeContracts[0];
+        const targetName = (nodeId: string) =>
+          state.sector.nodes.find((node) => node.id === nodeId)?.name ?? nodeId;
+        if (contract.type === 'Tug') {
+          tracker.textContent = contract.status === 'Accepted'
+            ? `Tow target: ${targetName(contract.payload.targetNodeId)}. Travel there to begin tow.`
+            : `Towing to ${targetName(contract.toNodeId ?? contract.fromNodeId)}.`;
+        } else if (contract.type === 'Salvage') {
+          tracker.textContent = contract.status === 'Accepted'
+            ? `Salvage site: ${targetName(contract.payload.targetNodeId)}.`
+            : `Salvaging... ${state.contracts.activeOperation?.remainingTicks ?? 0} ticks left.`;
+        } else {
+          tracker.textContent = `Deploy scanner at ${targetName(contract.payload.targetNodeId)}.`;
+        }
       }
     },
     setExportText: (value: string) => {

@@ -1,5 +1,5 @@
 import type { GameState, SimInput, Vec2 } from './types';
-import { nextRng } from './rng';
+import { hashSeedToUint32, nextRng } from './rng';
 import { GameMode } from './modes';
 import { tickNeeds } from './needs';
 import { isWalkable } from './interior/map';
@@ -7,6 +7,8 @@ import { handleInteriorInteraction } from './interior/interactions';
 import { pushLog } from './log';
 import { computeOpsEfficiency, tickCrew } from './crew/crew';
 import { pickEvent, queueEvent, shouldRollEvent } from './events/events';
+import { advanceTravel } from './sector/travel';
+import { refreshContracts, markContractCompleted } from './contracts/contracts';
 
 const CAMERA_SPEED = 220;
 const ZOOM_SPEED = 0.7;
@@ -140,6 +142,98 @@ export function advanceState(state: GameState, dt: number, input: SimInput): Gam
     const event = pickEvent(nextState);
     if (event) {
       nextState = queueEvent(nextState, event);
+    }
+  }
+
+  nextState = refreshContracts(nextState);
+  nextState = advanceTravel(nextState);
+
+  const expired = nextState.contracts.contracts.filter(
+    (contract) => contract.status === 'Accepted' && contract.deadlineTick !== undefined && nextState.tick > contract.deadlineTick
+  );
+  if (expired.length > 0) {
+    expired.forEach((contract) => {
+      nextState = markContractCompleted(nextState, contract.id, false);
+    });
+  }
+
+  if (nextState.contracts.activeOperation) {
+    const operation = nextState.contracts.activeOperation;
+    const remaining = operation.remainingTicks - 1;
+    nextState = {
+      ...nextState,
+      contracts: {
+        ...nextState.contracts,
+        activeOperation: {
+          ...operation,
+          remainingTicks: remaining
+        }
+      }
+    };
+
+    if (operation.type === 'Salvage' && nextState.tick % 300 === 0) {
+      const riskSeed = hashSeedToUint32(`${nextState.seed}|salvage|${operation.contractId}|${nextState.tick}`);
+      const riskRoll = nextRng(riskSeed).value;
+      const riskThreshold = 0.03 + (1 - nextState.company.opsEfficiency) * 0.04;
+      if (riskRoll < riskThreshold) {
+        nextState = {
+          ...nextState,
+          shipStats: {
+            ...nextState.shipStats,
+            hull: Math.max(0, nextState.shipStats.hull - 6)
+          },
+          log: pushLog(nextState.log, 'Salvage accident caused hull damage.')
+        };
+        if (nextState.shipStats.hull <= 0) {
+          nextState = markContractCompleted(nextState, operation.contractId, false);
+        }
+      }
+    }
+
+    if (nextState.contracts.activeOperation && remaining <= 0) {
+      const contract = nextState.contracts.contracts.find((entry) => entry.id === operation.contractId);
+      if (contract && contract.type === 'Salvage') {
+        const yieldSeed = hashSeedToUint32(`${nextState.seed}|salvageYield|${operation.contractId}|${nextState.tick}`);
+        const yieldRoll = nextRng(yieldSeed).value;
+        const parts = yieldRoll > 0.6 ? 1 : 0;
+        nextState = {
+          ...nextState,
+          shipStats: {
+            ...nextState.shipStats,
+            salvageParts: nextState.shipStats.salvageParts + parts
+          },
+          log: parts ? pushLog(nextState.log, 'Recovered salvage parts.') : nextState.log
+        };
+      }
+      nextState = markContractCompleted(nextState, operation.contractId, true);
+    }
+  }
+
+  if (nextState.sectorShip.towingContractId) {
+    const towing = nextState.contracts.contracts.find(
+      (entry) => entry.id === nextState.sectorShip.towingContractId
+    );
+    if (towing && towing.type === 'Tug') {
+      if (nextState.sectorShip.inTransit) {
+        const riskSeed = hashSeedToUint32(`${nextState.seed}|tow|${towing.id}|${nextState.tick}`);
+        const riskRoll = nextRng(riskSeed).value;
+        const hullFactor = 1 - nextState.shipStats.hull / nextState.shipStats.hullMax;
+        const riskThreshold = 0.015 + (1 - nextState.company.opsEfficiency) * 0.03 + hullFactor * 0.04;
+        if (riskRoll < riskThreshold) {
+          nextState = {
+            ...nextState,
+            sectorShip: { ...nextState.sectorShip, towingContractId: undefined },
+            log: pushLog(nextState.log, 'Tow line failure! Contract failed.')
+          };
+          nextState = markContractCompleted(nextState, towing.id, false);
+        }
+      } else if (nextState.sectorShip.nodeId === towing.toNodeId) {
+        nextState = {
+          ...nextState,
+          sectorShip: { ...nextState.sectorShip, towingContractId: undefined }
+        };
+        nextState = markContractCompleted(nextState, towing.id, true);
+      }
     }
   }
 

@@ -9,6 +9,8 @@ import { createUI } from './ui/ui';
 import { GameMode } from './sim/modes';
 import { hireCandidate, regenerateCandidates } from './sim/crew/hiring';
 import { resolveEvent } from './sim/events/events';
+import { startTravel } from './sim/sector/travel';
+import { acceptContract, startContractOperation } from './sim/contracts/contracts';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) {
@@ -104,8 +106,20 @@ const ui = createUI(uiWrapper, {
   },
   onResolveEventChoice: (choiceId: 'A' | 'B') => {
     setState(resolveEvent(state, choiceId));
+  },
+  onSetDestination: (nodeId: string) => {
+    if (state.mode !== GameMode.Command) {
+      return;
+    }
+    setState(startTravel(state, nodeId));
+  },
+  onAcceptContract: (contractId: string) => {
+    setState(acceptContract(state, contractId));
+  },
+  onStartContractAction: (contractId: string) => {
+    setState(startContractOperation(state, contractId));
   }
-});
+  });
 
 function handleControls(now: number): void {
   const snapshot = inputController.consume();

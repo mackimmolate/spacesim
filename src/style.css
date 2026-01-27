@@ -83,6 +83,78 @@ body {
   z-index: 2;
 }
 
+.contracts-panel {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 360px;
+  max-height: 45vh;
+  overflow: auto;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  background: rgba(8, 12, 24, 0.75);
+  border: 1px solid rgba(120, 160, 255, 0.2);
+  border-radius: 12px;
+  backdrop-filter: blur(6px);
+  z-index: 2;
+}
+
+.contracts-header {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.contracts-subhead {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9fb2ec;
+}
+
+.ship-stats {
+  font-size: 0.75rem;
+  color: #cbd5f4;
+}
+
+.travel-list,
+.contracts-list {
+  display: grid;
+  gap: 6px;
+}
+
+.travel-entry {
+  text-align: left;
+}
+
+.contract-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.contract-info {
+  font-size: 0.75rem;
+}
+
+.contract-empty {
+  font-size: 0.75rem;
+  color: #9fb2ec;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(12, 16, 28, 0.6);
+  border: 1px dashed rgba(120, 160, 255, 0.25);
+}
+
+.contract-tracker {
+  font-size: 0.75rem;
+  color: #c8d2f3;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(18, 24, 40, 0.6);
+}
+
 .crew-header {
   font-weight: 700;
   font-size: 1rem;

@@ -10,6 +10,7 @@ import {
   type StarLayerSpec
 } from './gen/spaceGen';
 import { InteriorRenderer } from './avatar/InteriorRenderer';
+import { SectorRenderer } from './sector/SectorRenderer';
 
 interface StarLayerRuntime {
   spec: StarLayerSpec;
@@ -30,6 +31,7 @@ export class Renderer {
   private readonly planets: PlanetRuntime[] = [];
   private readonly ship: PIXI.Graphics;
   private readonly interior: InteriorRenderer;
+  private readonly sector: SectorRenderer;
   private currentSeed = '';
   private descriptor: SpaceDescriptor | null = null;
   private lastMode: GameMode | null = null;
@@ -61,6 +63,10 @@ export class Renderer {
     this.interior = new InteriorRenderer(this.app);
     this.interior.container.zIndex = 5;
     this.app.stage.addChild(this.interior.container);
+
+    this.sector = new SectorRenderer();
+    this.sector.container.zIndex = 4;
+    this.app.stage.addChild(this.sector.container);
   }
 
   private rebuildSpace(seed: string): void {
@@ -245,6 +251,7 @@ export class Renderer {
       this.planetContainer.visible = isCommand;
       this.ship.visible = isCommand;
       this.interior.container.visible = !isCommand;
+      this.sector.container.visible = isCommand;
       this.app.renderer.backgroundColor = isCommand ? 0x050914 : 0x0b0f1a;
       this.lastMode = state.mode;
     }
@@ -278,6 +285,7 @@ export class Renderer {
         width / 2 + (state.ship.position.x - state.camera.x) * scale,
         height / 2 + (state.ship.position.y - state.camera.y) * scale
       );
+      this.sector.render(state, width, height);
     } else {
       this.interior.render(state, width, height);
     }

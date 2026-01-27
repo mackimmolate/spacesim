@@ -52,6 +52,10 @@ body {
   min-height: 0;
 }
 
+.ui-column-right {
+  grid-column: 3;
+}
+
 .ui-column > * {
   pointer-events: auto;
 }

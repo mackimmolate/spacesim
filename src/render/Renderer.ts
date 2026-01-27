@@ -45,19 +45,19 @@ export class Renderer {
   private hoveredSectorNodeId: string | null = null;
 
   constructor(container: HTMLElement) {
-    PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
-    PIXI.settings.ROUND_PIXELS = true;
+    PIXI.BaseTexture.defaultOptions.scaleMode = PIXI.SCALE_MODES.NEAREST;
 
     this.app = new PIXI.Application({
       resizeTo: container,
-      backgroundColor: 0x050914,
+      background: 0x050914,
       antialias: false
     });
+    this.app.renderer.roundPixels = true;
 
     container.appendChild(this.app.view as HTMLCanvasElement);
-    this.app.view.addEventListener('pointerdown', this.onPointerDown);
-    this.app.view.addEventListener('pointermove', this.onPointerMove);
-    this.app.view.addEventListener('pointerleave', this.onPointerLeave);
+    (this.app.view as HTMLCanvasElement).addEventListener('pointerdown', this.onPointerDown);
+    (this.app.view as HTMLCanvasElement).addEventListener('pointermove', this.onPointerMove);
+    (this.app.view as HTMLCanvasElement).addEventListener('pointerleave', this.onPointerLeave);
 
     this.planetContainer = new PIXI.Container();
     this.planetContainer.zIndex = 2;
@@ -264,7 +264,7 @@ export class Renderer {
       this.ship.visible = isCommand;
       this.interior.container.visible = !isCommand;
       this.sector.container.visible = isCommand;
-      this.app.renderer.backgroundColor = isCommand ? 0x050914 : 0x0b0f1a;
+      this.app.renderer.background.color = isCommand ? 0x050914 : 0x0b0f1a;
       this.lastMode = state.mode;
     }
 
@@ -327,7 +327,7 @@ export class Renderer {
     if (this.lastState.mode !== GameMode.Command) {
       return null;
     }
-    const canvasRect = this.app.view.getBoundingClientRect();
+    const canvasRect = (this.app.view as HTMLCanvasElement).getBoundingClientRect();
     if (canvasRect.width === 0 || canvasRect.height === 0) {
       return null;
     }
@@ -372,7 +372,7 @@ export class Renderer {
     }
     const node = this.sector.pickNodeAtScreen(this.lastState.sector.nodes, point.x, point.y);
     const nextId = node?.id ?? null;
-    this.app.view.style.cursor = nextId ? 'pointer' : '';
+    (this.app.view as HTMLCanvasElement).style.cursor = nextId ? 'pointer' : '';
     if (nextId !== this.hoveredSectorNodeId) {
       this.hoveredSectorNodeId = nextId;
       this.sector.setHoverNode(nextId);
@@ -384,11 +384,11 @@ export class Renderer {
       this.hoveredSectorNodeId = null;
       this.sector.setHoverNode(null);
     }
-    this.app.view.style.cursor = '';
+    (this.app.view as HTMLCanvasElement).style.cursor = '';
   }
 
   private eventToRendererPoint(event: PointerEvent): { x: number; y: number } | null {
-    const rect = this.app.view.getBoundingClientRect();
+    const rect = (this.app.view as HTMLCanvasElement).getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) {
       return null;
     }
@@ -401,9 +401,9 @@ export class Renderer {
   }
 
   destroy(): void {
-    this.app.view.removeEventListener('pointerdown', this.onPointerDown);
-    this.app.view.removeEventListener('pointermove', this.onPointerMove);
-    this.app.view.removeEventListener('pointerleave', this.onPointerLeave);
+    (this.app.view as HTMLCanvasElement).removeEventListener('pointerdown', this.onPointerDown);
+    (this.app.view as HTMLCanvasElement).removeEventListener('pointermove', this.onPointerMove);
+    (this.app.view as HTMLCanvasElement).removeEventListener('pointerleave', this.onPointerLeave);
     this.app.destroy(true, { children: true, texture: true, baseTexture: true });
   }
 }

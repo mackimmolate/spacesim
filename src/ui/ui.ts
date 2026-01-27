@@ -142,6 +142,8 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
 
   let selectedCrewId: string | null = null;
   let selectedCandidateId: string | null = null;
+  let lastCrewKey = '';
+  let lastCandidateKey = '';
 
   container.appendChild(overlay);
 
@@ -233,45 +235,66 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
 
       opsEfficiency.textContent = `Ops Efficiency: x${state.company.opsEfficiency.toFixed(2)}`;
 
-      rosterList.innerHTML = '';
-      state.company.crew.forEach((member) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'crew-entry';
-        button.textContent = `${member.name} (${member.role}) - ${member.payRate} cr/day`;
-        button.addEventListener('click', () => {
-          selectedCrewId = member.id;
-          selectedCandidateId = null;
-          crewDetails.scrollTo({ top: 0 });
-          crewDetails.textContent = '';
+      const crewKey = state.company.crew
+        .map((member) => `${member.id}:${member.role}:${member.payRate}`)
+        .join('|');
+      if (crewKey !== lastCrewKey) {
+        rosterList.innerHTML = '';
+        state.company.crew.forEach((member) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'crew-entry';
+          button.textContent = `${member.name} (${member.role}) - ${member.payRate} cr/day`;
+          button.addEventListener('click', () => {
+            selectedCrewId = member.id;
+            selectedCandidateId = null;
+            crewDetails.scrollTo({ top: 0 });
+            crewDetails.textContent = '';
+          });
+          rosterList.appendChild(button);
         });
-        rosterList.appendChild(button);
-      });
-
-      candidateList.innerHTML = '';
-      state.company.candidates.forEach((candidate) => {
-        const row = document.createElement('div');
-        row.className = 'candidate-row';
-
-        const info = document.createElement('button');
-        info.type = 'button';
-        info.className = 'candidate-info';
-        info.textContent = `${candidate.name} (${candidate.role}) - bonus ${candidate.signOnBonus} cr`;
-        info.addEventListener('click', () => {
-          selectedCandidateId = candidate.id;
+        if (selectedCrewId && !state.company.crew.some((member) => member.id === selectedCrewId)) {
           selectedCrewId = null;
+        }
+        lastCrewKey = crewKey;
+      }
+
+      const candidateKey = state.company.candidates
+        .map((candidate) => `${candidate.id}:${candidate.signOnBonus}`)
+        .join('|');
+      if (candidateKey !== lastCandidateKey) {
+        candidateList.innerHTML = '';
+        state.company.candidates.forEach((candidate) => {
+          const row = document.createElement('div');
+          row.className = 'candidate-row';
+
+          const info = document.createElement('button');
+          info.type = 'button';
+          info.className = 'candidate-info';
+          info.textContent = `${candidate.name} (${candidate.role}) - bonus ${candidate.signOnBonus} cr`;
+          info.addEventListener('click', () => {
+            selectedCandidateId = candidate.id;
+            selectedCrewId = null;
+          });
+
+          const hire = document.createElement('button');
+          hire.type = 'button';
+          hire.className = 'candidate-hire';
+          hire.textContent = 'Hire';
+          hire.addEventListener('click', () => actions.onHireCandidate(candidate.id));
+
+          row.appendChild(info);
+          row.appendChild(hire);
+          candidateList.appendChild(row);
         });
-
-        const hire = document.createElement('button');
-        hire.type = 'button';
-        hire.className = 'candidate-hire';
-        hire.textContent = 'Hire';
-        hire.addEventListener('click', () => actions.onHireCandidate(candidate.id));
-
-        row.appendChild(info);
-        row.appendChild(hire);
-        candidateList.appendChild(row);
-      });
+        if (
+          selectedCandidateId &&
+          !state.company.candidates.some((candidate) => candidate.id === selectedCandidateId)
+        ) {
+          selectedCandidateId = null;
+        }
+        lastCandidateKey = candidateKey;
+      }
 
       const selectedCrew = state.company.crew.find((member) => member.id === selectedCrewId);
       const selectedCandidate = state.company.candidates.find(

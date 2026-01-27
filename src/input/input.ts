@@ -21,7 +21,6 @@ const EMPTY_CONTROLS: ControlInput = {
   newSeed: false,
   resetCamera: false,
   regenerateVisuals: false
-  newSeed: false
 };
 
 export function createInputController(): {
@@ -42,9 +41,6 @@ export function createInputController(): {
     resetCamera: false
   };
   const pressedKeys = new Set<string>();
-} {
-  let pendingControls: ControlInput = { ...EMPTY_CONTROLS };
-  const simInput: SimInput = { impulse: { x: 0, y: 0 } };
 
   function mergeFlag(flag: keyof ControlInput): void {
     pendingControls = { ...pendingControls, [flag]: true };
@@ -61,7 +57,7 @@ export function createInputController(): {
     simInput.zoomOut = pressedKeys.has('Minus') || pressedKeys.has('NumpadSubtract');
     simInput.resetCamera = pendingControls.resetCamera;
 
-    const snapshot = {
+    const snapshot: InputSnapshot = {
       controls: pendingControls,
       sim: {
         impulse: { ...simInput.impulse },
@@ -70,9 +66,6 @@ export function createInputController(): {
         zoomOut: simInput.zoomOut,
         resetCamera: simInput.resetCamera
       }
-    const snapshot = {
-      controls: pendingControls,
-      sim: { impulse: { ...simInput.impulse } }
     };
     pendingControls = { ...EMPTY_CONTROLS };
     return snapshot;
@@ -110,7 +103,6 @@ export function createInputController(): {
 
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
-  window.addEventListener('keydown', onKeyDown);
 
   return {
     consume,
@@ -120,6 +112,5 @@ export function createInputController(): {
     signalNewSeed: () => mergeFlag('newSeed'),
     signalResetCamera: () => mergeFlag('resetCamera'),
     signalRegenerateVisuals: () => mergeFlag('regenerateVisuals')
-    signalNewSeed: () => mergeFlag('newSeed')
   };
 }

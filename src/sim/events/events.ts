@@ -256,7 +256,7 @@ export function pickEvent(state: GameState): EventInstance | null {
     threshold -= event.weight;
     return threshold <= 0;
   }) ?? picks[0];
-  return chosen.build(state);
+  return chosen?.build(state) ?? null;
 }
 
 export function resolveEvent(state: GameState, choice: EventChoiceId): GameState {

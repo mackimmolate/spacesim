@@ -104,7 +104,7 @@ export class CrewPanel extends UIComponent<CrewPanelProps> {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'crew-entry';
-    button.dataset.crewId = member.id;
+    button.dataset['crewId'] = member.id;
     button.textContent = `${member.name} (${member.role}) - ${member.payRate} cr/day`;
     
     button.addEventListener('click', () => {
@@ -123,7 +123,7 @@ export class CrewPanel extends UIComponent<CrewPanelProps> {
 
   private updateRosterSelection(): void {
     this.rosterList.querySelectorAll<HTMLButtonElement>('button.crew-entry').forEach((button) => {
-      button.classList.toggle('is-selected', button.dataset.crewId === this.selectedCrewId);
+      button.classList.toggle('is-selected', button.dataset['crewId'] === this.selectedCrewId);
     });
   }
 
@@ -167,7 +167,7 @@ export class CrewPanel extends UIComponent<CrewPanelProps> {
     const info = document.createElement('button');
     info.type = 'button';
     info.className = 'candidate-info';
-    info.dataset.candidateId = candidate.id;
+    info.dataset['candidateId'] = candidate.id;
     info.textContent = `${candidate.name} (${candidate.role}) - bonus ${candidate.signOnBonus} cr`;
     
     info.addEventListener('click', () => {
@@ -193,7 +193,7 @@ export class CrewPanel extends UIComponent<CrewPanelProps> {
       .forEach((button) => {
         button.classList.toggle(
           'is-selected',
-          button.dataset.candidateId === this.selectedCandidateId
+          button.dataset['candidateId'] === this.selectedCandidateId
         );
       });
   }
@@ -243,7 +243,7 @@ export class CrewPanel extends UIComponent<CrewPanelProps> {
     this.crewDetails.appendChild(summary);
 
     if (detailTarget.background.contacts.length > 0) {
-      const contact = detailTarget.background.contacts[0];
+      const contact = detailTarget.background.contacts[0]!;
       const contactLine = this.createElement(
         'div',
         'crew-detail-contact',

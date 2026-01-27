@@ -12,7 +12,7 @@ function nextInt(rngState: number, max: number): { value: number; nextState: num
 
 function pick<T>(rngState: number, list: T[]): { value: T; nextState: number } {
   const roll = nextInt(rngState, list.length);
-  return { value: list[roll.value], nextState: roll.nextState };
+  return { value: list[roll.value] as T, nextState: roll.nextState };
 }
 
 function pickNodeId(rngState: number, nodes: SectorState['nodes']): { value: string; nextState: number } {

@@ -66,7 +66,12 @@ const ui = createUI(uiWrapper, {
   onNewSeed: () => inputController.signalNewSeed(),
   onResetCamera: () => inputController.signalResetCamera(),
   onSave: () => {
-    localStorage.setItem(storageKey, serializeSaveState(state));
+    const res = serializeSaveState(state);
+    if (!res.success) {
+      ui.setStatusMessage('Save failed.');
+      return;
+    }
+    localStorage.setItem(storageKey, res.value);
     ui.setStatusMessage('Saved to localStorage.');
   },
   onLoad: () => {
@@ -77,7 +82,9 @@ const ui = createUI(uiWrapper, {
     }
     try {
       engine.resetClock();
-      setState(deserializeSaveState(payload));
+      const res = deserializeSaveState(payload);
+      if (!res.success) throw res.error;
+      setState(res.value);
       ui.setStatusMessage('Loaded from localStorage.');
     } catch (error) {
       ui.setStatusMessage(`Load failed: ${(error as Error).message}`);

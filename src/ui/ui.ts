@@ -205,11 +205,11 @@ function createOverlay(actions: UIActions) {
     return { fill, value, min, max };
   }
 
-  needRows.hunger = createNeedRow('Hunger', 0, 100);
-  needRows.thirst = createNeedRow('Thirst', 0, 100);
-  needRows.fatigue = createNeedRow('Fatigue', 0, 100);
-  needRows.stress = createNeedRow('Stress', 0, 100);
-  needRows.morale = createNeedRow('Morale', -50, 50);
+  needRows['hunger'] = createNeedRow('Hunger', 0, 100);
+  needRows['thirst'] = createNeedRow('Thirst', 0, 100);
+  needRows['fatigue'] = createNeedRow('Fatigue', 0, 100);
+  needRows['stress'] = createNeedRow('Stress', 0, 100);
+  needRows['morale'] = createNeedRow('Morale', -50, 50);
 
   function updateNeedRow(row: NeedRow, rawValue: number): void {
     const clamped = Math.min(row.max, Math.max(row.min, rawValue));
@@ -243,11 +243,11 @@ function createOverlay(actions: UIActions) {
           : 'Move: WASD/Arrows | Interact: E | Chair: E';
 
       // Update needs
-      updateNeedRow(needRows.hunger, state.needs.hunger);
-      updateNeedRow(needRows.thirst, state.needs.thirst);
-      updateNeedRow(needRows.fatigue, state.needs.fatigue);
-      updateNeedRow(needRows.stress, state.needs.stress);
-      updateNeedRow(needRows.morale, state.needs.morale);
+      updateNeedRow(needRows['hunger']!, state.needs.hunger);
+      updateNeedRow(needRows['thirst']!, state.needs.thirst);
+      updateNeedRow(needRows['fatigue']!, state.needs.fatigue);
+      updateNeedRow(needRows['stress']!, state.needs.stress);
+      updateNeedRow(needRows['morale']!, state.needs.morale);
 
       // Update log
       logContainer.innerHTML = '';

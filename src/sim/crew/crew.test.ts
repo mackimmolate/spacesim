@@ -29,6 +29,7 @@ describe('hiring flow', () => {
   it('reduces credits and adds crew on hire', () => {
     let state = createInitialState('hire-seed');
     const candidate = state.company.candidates[0];
+    if (!candidate) throw new Error('Missing candidate');
     state = hireCandidate(state, candidate.id);
     expect(state.company.crew.length).toBe(1);
     expect(state.company.credits).toBe(1500 - candidate.signOnBonus);
@@ -40,6 +41,7 @@ describe('payroll effects', () => {
   it('missing payroll reduces morale compared to paying', () => {
     const base = createInitialState('pay-seed');
     const candidate = base.company.candidates[0];
+    if (!candidate) throw new Error('Missing candidate');
     const hired = hireCandidate(base, candidate.id);
     const payReady = {
       ...hired,
@@ -63,6 +65,7 @@ describe('payroll effects', () => {
     const paid = advanceState(payReady, FIXED_DT, EMPTY_INPUT);
     const missed = advanceState(missReady, FIXED_DT, EMPTY_INPUT);
 
+    if (!paid.company.crew[0] || !missed.company.crew[0]) throw new Error('Missing crew');
     const paidMorale = paid.company.crew[0].needs.morale;
     const missedMorale = missed.company.crew[0].needs.morale;
     expect(missedMorale).toBeLessThan(paidMorale - 4);
@@ -73,6 +76,7 @@ describe('event determinism', () => {
   it('returns the same event for the same seed and tick', () => {
     let state = createInitialState('event-seed');
     const candidate = state.company.candidates[0];
+    if (!candidate) throw new Error('Missing candidate');
     state = hireCandidate(state, candidate.id);
     state = {
       ...state,

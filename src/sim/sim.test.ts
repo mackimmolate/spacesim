@@ -39,13 +39,15 @@ describe('save/load round-trip', () => {
   it('retains key fields after serialize/deserialize', () => {
     const state = runTicks('cafebabe', 42);
     const serialized = serializeSaveState(state);
-    const rehydrated = deserializeSaveState(serialized);
+    if (!serialized.success) throw serialized.error;
+    const rehydrated = deserializeSaveState(serialized.value);
+    if (!rehydrated.success) throw rehydrated.error;
 
-    expect(rehydrated.seed).toBe(state.seed);
-    expect(rehydrated.tick).toBe(state.tick);
-    expect(rehydrated.time).toBeCloseTo(state.time, 6);
-    expect(rehydrated.ship.position.x).toBeCloseTo(state.ship.position.x, 6);
-    expect(rehydrated.ship.position.y).toBeCloseTo(state.ship.position.y, 6);
+    expect(rehydrated.value.seed).toBe(state.seed);
+    expect(rehydrated.value.tick).toBe(state.tick);
+    expect(rehydrated.value.time).toBeCloseTo(state.time, 6);
+    expect(rehydrated.value.ship.position.x).toBeCloseTo(state.ship.position.x, 6);
+    expect(rehydrated.value.ship.position.y).toBeCloseTo(state.ship.position.y, 6);
   });
 });
 

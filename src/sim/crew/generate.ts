@@ -64,7 +64,7 @@ function nextBetween(rngState: number, min: number, max: number): { value: numbe
 
 function pick<T>(rngState: number, list: T[]): { value: T; nextState: number } {
   const roll = nextInt(rngState, list.length);
-  return { value: list[roll.value], nextState: roll.nextState };
+  return { value: list[roll.value] as T, nextState: roll.nextState };
 }
 
 function jitterSkills(base: CrewSkills, rngState: number): { skills: CrewSkills; nextState: number } {

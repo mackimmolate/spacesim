@@ -10,7 +10,7 @@ export const DEFAULT_IMPULSE: Vec2 = { x: 0, y: 0 };
 
 export function createInitialState(seed: string): GameState {
   const sector = generateSector(seed);
-  const startNode = sector.nodes.find((node) => node.type === 'station') ?? sector.nodes[0];
+  const startNode = sector.nodes.find((node) => node.type === 'station') ?? sector.nodes[0]!;
   return {
     seed,
     renderSeed: seed,

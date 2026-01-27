@@ -19,7 +19,7 @@ export function getInteriorTile(x: number, y: number): InteriorTile | null {
   if (x < 0 || y < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT) {
     return null;
   }
-  return interiorGrid[y][x];
+  return interiorGrid[y]?.[x] ?? null;
 }
 
 export function isWalkable(x: number, y: number): boolean {

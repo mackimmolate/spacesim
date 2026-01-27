@@ -1,9 +1,6 @@
 import type { GameState, SimInput, Vec2 } from './types';
 import { nextRng } from './rng';
 
-const IMPULSE_SCALE = 60;
-const DRIFT_ACCEL = 5;
-const MAX_SPEED = 120;
 const CAMERA_SPEED = 220;
 const ZOOM_SPEED = 0.7;
 const MIN_ZOOM = 0.5;
@@ -69,9 +66,5 @@ export function advanceState(state: GameState, dt: number, input: SimInput): Gam
       velocity
     },
     camera
-    camera: {
-      x: position.x,
-      y: position.y
-    }
   };
 }

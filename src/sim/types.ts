@@ -18,7 +18,6 @@ export interface GameState {
     y: number;
     zoom: number;
   };
-  camera: Vec2;
 }
 
 export interface SaveState {

@@ -1,13 +1,21 @@
 {
   "name": "spacesim",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "type": "module",
+  "description": "A deterministic space company simulation game",
+  "author": "Your Name",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/postbuild.mjs",
+    "build": "tsc && vite build && node scripts/postbuild.mjs",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules/.vite"
   },
   "dependencies": {
     "pixi.js": "^7.3.4"
@@ -17,5 +25,17 @@
     "typescript": "^5.4.5",
     "vite": "^5.4.8",
     "vitest": "^1.6.0"
-  }
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "game",
+    "simulation",
+    "space",
+    "deterministic",
+    "typescript",
+    "pixijs"
+  ]
 }

@@ -52,6 +52,7 @@ const ui = createUI(uiWrapper, {
   onStepOnce: () => inputController.signalStepOnce(),
   onCycleSpeed: () => inputController.signalCycleSpeed(),
   onNewSeed: () => inputController.signalNewSeed(),
+  onResetCamera: () => inputController.signalResetCamera(),
   onSave: () => {
     localStorage.setItem(storageKey, serializeSaveState(state));
     ui.setStatusMessage('Saved to localStorage.');
@@ -90,6 +91,8 @@ const ui = createUI(uiWrapper, {
     } catch (error) {
       ui.setStatusMessage(`Import failed: ${(error as Error).message}`);
     }
+  },
+  onRegenerateVisuals: () => inputController.signalRegenerateVisuals()
   }
 });
 
@@ -109,6 +112,10 @@ function handleControls(now: number): void {
   if (snapshot.controls.newSeed) {
     resetState(false);
     ui.setStatusMessage('Generated new seed.');
+  }
+  if (snapshot.controls.regenerateVisuals) {
+    setState({ ...state, renderSeed: generateSeed() });
+    ui.setStatusMessage('Regenerated visuals with a new render seed.');
   }
 
   engine.update(now, snapshot.sim, (dt, input) => {

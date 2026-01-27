@@ -5,12 +5,18 @@ export interface Vec2 {
 
 export interface GameState {
   seed: string;
+  renderSeed: string;
   rngState: number;
   tick: number;
   time: number;
   ship: {
     position: Vec2;
     velocity: Vec2;
+  };
+  camera: {
+    x: number;
+    y: number;
+    zoom: number;
   };
   camera: Vec2;
 }
@@ -22,4 +28,8 @@ export interface SaveState {
 
 export interface SimInput {
   impulse: Vec2;
+  cameraPan: Vec2;
+  zoomIn: boolean;
+  zoomOut: boolean;
+  resetCamera: boolean;
 }

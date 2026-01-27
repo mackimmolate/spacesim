@@ -1,6 +1,13 @@
 import type { GameState, SimInput, Vec2 } from './types';
 import { nextRng } from './rng';
 
+const IMPULSE_SCALE = 60;
+const DRIFT_ACCEL = 5;
+const MAX_SPEED = 120;
+const CAMERA_SPEED = 220;
+const ZOOM_SPEED = 0.7;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 2.0;
 const IMPULSE_SCALE = 0.4;
 const DRIFT_ACCEL = 0.12;
 const MAX_SPEED = 2.5;
@@ -35,6 +42,23 @@ export function advanceState(state: GameState, dt: number, input: SimInput): Gam
     y: state.ship.position.y + velocity.y * dt
   };
 
+  const camera = {
+    x: state.camera.x + input.cameraPan.x * CAMERA_SPEED * dt,
+    y: state.camera.y + input.cameraPan.y * CAMERA_SPEED * dt,
+    zoom: state.camera.zoom
+  };
+
+  if (input.resetCamera) {
+    camera.x = 0;
+    camera.y = 0;
+    camera.zoom = 1;
+  }
+
+  if (input.zoomIn || input.zoomOut) {
+    const direction = (input.zoomIn ? 1 : 0) - (input.zoomOut ? 1 : 0);
+    camera.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, camera.zoom + direction * ZOOM_SPEED * dt));
+  }
+
   return {
     ...state,
     rngState: noiseY.nextState,
@@ -44,6 +68,7 @@ export function advanceState(state: GameState, dt: number, input: SimInput): Gam
       position,
       velocity
     },
+    camera
     camera: {
       x: position.x,
       y: position.y

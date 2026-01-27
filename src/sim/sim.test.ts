@@ -5,6 +5,13 @@ import { hashState } from './hash';
 import { deserializeSaveState, serializeSaveState } from './save';
 
 const FIXED_DT = 1 / 60;
+const EMPTY_INPUT = {
+  impulse: { x: 0, y: 0 },
+  cameraPan: { x: 0, y: 0 },
+  zoomIn: false,
+  zoomOut: false,
+  resetCamera: false
+};
 const EMPTY_INPUT = { impulse: { x: 0, y: 0 } };
 
 function runTicks(seed: string, ticks: number) {

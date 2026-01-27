@@ -6,11 +6,13 @@ export interface UIActions {
   onStepOnce: () => void;
   onCycleSpeed: () => void;
   onNewSeed: () => void;
+  onResetCamera: () => void;
   onSave: () => void;
   onLoad: () => void;
   onReset: () => void;
   onExport: () => void;
   onImport: (payload: string) => void;
+  onRegenerateVisuals: () => void;
 }
 
 export interface UIHandle {
@@ -34,6 +36,12 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     { label: 'Step', onClick: actions.onStepOnce },
     { label: 'Speed', onClick: actions.onCycleSpeed },
     { label: 'New Seed', onClick: actions.onNewSeed },
+    { label: 'Reset Camera', onClick: actions.onResetCamera },
+    { label: 'Save', onClick: actions.onSave },
+    { label: 'Load', onClick: actions.onLoad },
+    { label: 'Reset', onClick: actions.onReset },
+    { label: 'Export JSON', onClick: actions.onExport },
+    { label: 'Regenerate Visuals', onClick: actions.onRegenerateVisuals }
     { label: 'Save', onClick: actions.onSave },
     { label: 'Load', onClick: actions.onLoad },
     { label: 'Reset', onClick: actions.onReset },
@@ -82,6 +90,9 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         <div><strong>Sim Time:</strong> ${state.time.toFixed(2)}s</div>
         <div><strong>Speed:</strong> ${engine.getSpeed()}x</div>
         <div><strong>Paused:</strong> ${engine.isPaused() ? 'Yes' : 'No'}</div>
+        <div><strong>Camera:</strong> x=${state.camera.x.toFixed(1)} y=${state.camera.y.toFixed(
+          1
+        )} z=${state.camera.zoom.toFixed(2)}</div>
       `;
     },
     setExportText: (value: string) => {

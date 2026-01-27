@@ -46,6 +46,15 @@ src/
 * **Export JSON** fills the textarea with the current save payload.
 * **Import JSON** parses the textarea content and restores the sim.
 
+## Controls
+
+* **W/A/S/D or Arrow Keys**: pan the camera.
+* **+ / -**: zoom camera in/out.
+* **R**: reset camera.
+* **C**: cycle sim speed.
+* **N**: new simulation seed.
+* **Regenerate Visuals**: keeps the sim state but rebuilds the starfield/planets with a new render seed.
+
 ## GitHub Pages (user site) deploy
 
 This repository is a **GitHub user site**, so the Vite `base` is set to `/` for production builds.

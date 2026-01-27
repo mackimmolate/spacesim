@@ -27,6 +27,14 @@ body {
   inset: 0;
 }
 
+.canvas-wrapper {
+  z-index: 0;
+}
+
+.ui-wrapper {
+  z-index: 1;
+}
+
 .overlay {
   position: absolute;
   top: 16px;
@@ -40,6 +48,7 @@ body {
   border-radius: 12px;
   max-width: 360px;
   backdrop-filter: blur(6px);
+  z-index: 1;
 }
 
 .mode-banner {
@@ -71,6 +80,7 @@ body {
   border: 1px solid rgba(120, 160, 255, 0.2);
   border-radius: 12px;
   backdrop-filter: blur(6px);
+  z-index: 2;
 }
 
 .crew-header {

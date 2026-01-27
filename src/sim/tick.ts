@@ -8,6 +8,9 @@ const CAMERA_SPEED = 220;
 const ZOOM_SPEED = 0.7;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2.0;
+const IMPULSE_SCALE = 0.4;
+const DRIFT_ACCEL = 0.12;
+const MAX_SPEED = 2.5;
 
 function clampVec(vec: Vec2, max: number): Vec2 {
   const mag = Math.hypot(vec.x, vec.y);
@@ -66,5 +69,9 @@ export function advanceState(state: GameState, dt: number, input: SimInput): Gam
       velocity
     },
     camera
+    camera: {
+      x: position.x,
+      y: position.y
+    }
   };
 }

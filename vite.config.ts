@@ -6,4 +6,8 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.ts']
   }
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  base: "/spacesim/",
 });

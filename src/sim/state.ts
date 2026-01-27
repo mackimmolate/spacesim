@@ -15,6 +15,9 @@ export function createInitialState(seed: string): GameState {
       velocity: { x: 20, y: 8 }
     },
     camera: { x: 0, y: 0, zoom: 1 }
+      velocity: { x: 0.6, y: 0.2 }
+    },
+    camera: { x: 0, y: 0 }
   };
 }
 
@@ -25,5 +28,6 @@ export function createDefaultInput(): SimInput {
     zoomIn: false,
     zoomOut: false,
     resetCamera: false
+    impulse: { ...DEFAULT_IMPULSE }
   };
 }

@@ -12,6 +12,7 @@ const EMPTY_INPUT = {
   zoomOut: false,
   resetCamera: false
 };
+const EMPTY_INPUT = { impulse: { x: 0, y: 0 } };
 
 function runTicks(seed: string, ticks: number) {
   let state = createInitialState(seed);

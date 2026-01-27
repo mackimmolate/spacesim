@@ -42,6 +42,10 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     { label: 'Reset', onClick: actions.onReset },
     { label: 'Export JSON', onClick: actions.onExport },
     { label: 'Regenerate Visuals', onClick: actions.onRegenerateVisuals }
+    { label: 'Save', onClick: actions.onSave },
+    { label: 'Load', onClick: actions.onLoad },
+    { label: 'Reset', onClick: actions.onReset },
+    { label: 'Export JSON', onClick: actions.onExport }
   ];
 
   buttons.forEach((buttonConfig) => {

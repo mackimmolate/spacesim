@@ -93,6 +93,7 @@ const ui = createUI(uiWrapper, {
     }
   },
   onRegenerateVisuals: () => inputController.signalRegenerateVisuals()
+  }
 });
 
 function handleControls(now: number): void {

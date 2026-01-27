@@ -23,6 +23,7 @@ export function hashState(state: GameState): string {
     state.camera.x.toFixed(3),
     state.camera.y.toFixed(3),
     state.camera.zoom.toFixed(3)
+    state.ship.velocity.y.toFixed(6)
   ];
   return hashString(parts.join('|'));
 }

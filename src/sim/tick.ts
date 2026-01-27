@@ -5,6 +5,8 @@ import { tickNeeds } from './needs';
 import { isWalkable } from './interior/map';
 import { handleInteriorInteraction } from './interior/interactions';
 import { pushLog } from './log';
+import { computeOpsEfficiency, tickCrew } from './crew/crew';
+import { pickEvent, queueEvent, shouldRollEvent } from './events/events';
 
 const CAMERA_SPEED = 220;
 const ZOOM_SPEED = 0.7;
@@ -34,6 +36,7 @@ function clampVec(vec: Vec2, max: number): Vec2 {
 }
 
 export function advanceState(state: GameState, dt: number, input: SimInput): GameState {
+  const efficiency = computeOpsEfficiency(state.company.crew);
   const noiseX = nextRng(state.rngState);
   const noiseY = nextRng(noiseX.nextState);
   const drift = {
@@ -54,9 +57,10 @@ export function advanceState(state: GameState, dt: number, input: SimInput): Gam
     y: state.ship.position.y + velocity.y * dt
   };
 
+  const cameraSpeed = state.mode === GameMode.Command ? CAMERA_SPEED * efficiency : CAMERA_SPEED;
   const camera = {
-    x: state.camera.x + input.cameraPan.x * CAMERA_SPEED * dt,
-    y: state.camera.y + input.cameraPan.y * CAMERA_SPEED * dt,
+    x: state.camera.x + input.cameraPan.x * cameraSpeed * dt,
+    y: state.camera.y + input.cameraPan.y * cameraSpeed * dt,
     zoom: state.camera.zoom
   };
 
@@ -77,12 +81,75 @@ export function advanceState(state: GameState, dt: number, input: SimInput): Gam
     tick: state.tick + 1,
     time: state.time + dt,
     needs: tickNeeds(state.needs, dt, state.mode),
+    company: {
+      ...state.company,
+      opsEfficiency: efficiency
+    },
     ship: {
       position,
       velocity
     },
     camera
   };
+
+  nextState = tickCrew(nextState, dt);
+
+  if (nextState.time >= nextState.company.payrollDueTime) {
+    const cycleDays = 1;
+    const payroll = nextState.company.crew.reduce((sum, member) => sum + member.payRate * cycleDays, 0);
+    if (payroll > 0 && nextState.company.credits >= payroll) {
+      nextState = {
+        ...nextState,
+        company: {
+          ...nextState.company,
+          credits: nextState.company.credits - payroll,
+          payrollDueTime: nextState.company.payrollDueTime + cycleDays * 60 * 60 * 24,
+          crew: nextState.company.crew.map((crewMember) => ({
+            ...crewMember,
+            needs: {
+              ...crewMember.needs,
+              morale: Math.min(50, crewMember.needs.morale + 2),
+              stress: Math.max(0, crewMember.needs.stress - 3)
+            }
+          }))
+        },
+        log: pushLog(nextState.log, `Payroll paid (${payroll} credits).`)
+      };
+    } else if (payroll > 0) {
+      nextState = {
+        ...nextState,
+        company: {
+          ...nextState.company,
+          payrollDueTime: nextState.company.payrollDueTime + cycleDays * 60 * 60 * 24,
+          crew: nextState.company.crew.map((crewMember) => ({
+            ...crewMember,
+            needs: {
+              ...crewMember.needs,
+              morale: Math.max(-50, crewMember.needs.morale - 6),
+              stress: Math.min(100, crewMember.needs.stress + 6),
+              loyalty: Math.max(0, crewMember.needs.loyalty - 4)
+            }
+          }))
+        },
+        log: pushLog(nextState.log, 'Payroll missed. Morale suffers.')
+      };
+    }
+  }
+
+  if (!nextState.company.pendingEvent && shouldRollEvent(nextState)) {
+    const event = pickEvent(nextState);
+    if (event) {
+      nextState = queueEvent(nextState, event);
+    }
+  }
+
+  const updatedEfficiency = computeOpsEfficiency(nextState.company.crew);
+  if (updatedEfficiency !== nextState.company.opsEfficiency) {
+    nextState = {
+      ...nextState,
+      company: { ...nextState.company, opsEfficiency: updatedEfficiency }
+    };
+  }
 
   if (state.mode === GameMode.Avatar) {
     const cooldown = Math.max(0, state.player.moveCooldown - dt);

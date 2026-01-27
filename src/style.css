@@ -57,6 +57,102 @@ body {
   transition: opacity 0.2s ease;
 }
 
+.crew-panel {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 360px;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  background: rgba(8, 12, 24, 0.75);
+  border: 1px solid rgba(120, 160, 255, 0.2);
+  border-radius: 12px;
+  backdrop-filter: blur(6px);
+}
+
+.crew-header {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.crew-ops {
+  font-size: 0.8rem;
+  color: #c8d8ff;
+}
+
+.crew-roster,
+.crew-candidates {
+  display: grid;
+  gap: 6px;
+}
+
+.crew-entry {
+  text-align: left;
+}
+
+.crew-details {
+  font-size: 0.75rem;
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(12, 16, 28, 0.6);
+}
+
+.crew-detail-title {
+  font-weight: 600;
+}
+
+.crew-detail-summary,
+.crew-detail-contact,
+.crew-detail-traits,
+.crew-detail-needs {
+  color: #c8d2f3;
+}
+
+.crew-subhead {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9fb2ec;
+}
+
+.candidate-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+}
+
+.candidate-info {
+  text-align: left;
+}
+
+.crew-event {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(20, 26, 40, 0.75);
+  border: 1px solid rgba(120, 160, 255, 0.15);
+}
+
+.event-title {
+  font-weight: 600;
+}
+
+.event-desc {
+  font-size: 0.75rem;
+  color: #cbd5f4;
+}
+
+.event-choices {
+  display: grid;
+  gap: 6px;
+}
+
 .mode-indicator {
   font-weight: 600;
   font-size: 0.9rem;

@@ -13,6 +13,9 @@ export interface UIActions {
   onExport: () => void;
   onImport: (payload: string) => void;
   onRegenerateVisuals: () => void;
+  onGenerateCandidates: () => void;
+  onHireCandidate: (candidateId: string) => void;
+  onResolveEventChoice: (choiceId: 'A' | 'B') => void;
 }
 
 export interface UIHandle {
@@ -28,6 +31,10 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const modeBanner = document.createElement('div');
   modeBanner.className = 'mode-banner';
   container.appendChild(modeBanner);
+
+  const crewPanel = document.createElement('div');
+  crewPanel.className = 'crew-panel';
+  container.appendChild(crewPanel);
 
   const modeIndicator = document.createElement('div');
   modeIndicator.className = 'mode-indicator';
@@ -96,6 +103,46 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   overlay.appendChild(importArea);
   overlay.appendChild(message);
 
+  const crewHeader = document.createElement('div');
+  crewHeader.className = 'crew-header';
+  crewHeader.textContent = 'Crew';
+
+  const opsEfficiency = document.createElement('div');
+  opsEfficiency.className = 'crew-ops';
+
+  const rosterList = document.createElement('div');
+  rosterList.className = 'crew-roster';
+
+  const crewDetails = document.createElement('div');
+  crewDetails.className = 'crew-details';
+
+  const candidateHeader = document.createElement('div');
+  candidateHeader.className = 'crew-subhead';
+  candidateHeader.textContent = 'Candidates';
+
+  const generateButton = document.createElement('button');
+  generateButton.type = 'button';
+  generateButton.textContent = 'Generate Candidates';
+  generateButton.addEventListener('click', actions.onGenerateCandidates);
+
+  const candidateList = document.createElement('div');
+  candidateList.className = 'crew-candidates';
+
+  const eventPanel = document.createElement('div');
+  eventPanel.className = 'crew-event';
+
+  crewPanel.appendChild(crewHeader);
+  crewPanel.appendChild(opsEfficiency);
+  crewPanel.appendChild(rosterList);
+  crewPanel.appendChild(crewDetails);
+  crewPanel.appendChild(candidateHeader);
+  crewPanel.appendChild(generateButton);
+  crewPanel.appendChild(candidateList);
+  crewPanel.appendChild(eventPanel);
+
+  let selectedCrewId: string | null = null;
+  let selectedCandidateId: string | null = null;
+
   container.appendChild(overlay);
 
   function createNeedRow(label: string, min: number, max: number) {
@@ -149,6 +196,11 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         <div><strong>Seed:</strong> ${state.seed}</div>
         <div><strong>Tick:</strong> ${state.tick}</div>
         <div><strong>Sim Time:</strong> ${state.time.toFixed(2)}s</div>
+        <div><strong>Credits:</strong> ${state.company.credits.toFixed(0)}</div>
+        <div><strong>Payroll Due:</strong> ${Math.max(
+          0,
+          (state.company.payrollDueTime - state.time) / 3600
+        ).toFixed(2)}h</div>
         <div><strong>Speed:</strong> ${engine.getSpeed()}x</div>
         <div><strong>Paused:</strong> ${engine.isPaused() ? 'Yes' : 'No'}</div>
         <div><strong>Camera:</strong> x=${state.camera.x.toFixed(1)} y=${state.camera.y.toFixed(
@@ -178,6 +230,108 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
           line.textContent = entry;
           logContainer.appendChild(line);
         });
+
+      opsEfficiency.textContent = `Ops Efficiency: x${state.company.opsEfficiency.toFixed(2)}`;
+
+      rosterList.innerHTML = '';
+      state.company.crew.forEach((member) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'crew-entry';
+        button.textContent = `${member.name} (${member.role}) — ${member.payRate} cr/day`;
+        button.addEventListener('click', () => {
+          selectedCrewId = member.id;
+          selectedCandidateId = null;
+          crewDetails.scrollTo({ top: 0 });
+          crewDetails.textContent = '';
+        });
+        rosterList.appendChild(button);
+      });
+
+      candidateList.innerHTML = '';
+      state.company.candidates.forEach((candidate) => {
+        const row = document.createElement('div');
+        row.className = 'candidate-row';
+
+        const info = document.createElement('button');
+        info.type = 'button';
+        info.className = 'candidate-info';
+        info.textContent = `${candidate.name} (${candidate.role}) — bonus ${candidate.signOnBonus} cr`;
+        info.addEventListener('click', () => {
+          selectedCandidateId = candidate.id;
+          selectedCrewId = null;
+        });
+
+        const hire = document.createElement('button');
+        hire.type = 'button';
+        hire.className = 'candidate-hire';
+        hire.textContent = 'Hire';
+        hire.addEventListener('click', () => actions.onHireCandidate(candidate.id));
+
+        row.appendChild(info);
+        row.appendChild(hire);
+        candidateList.appendChild(row);
+      });
+
+      const selectedCrew = state.company.crew.find((member) => member.id === selectedCrewId);
+      const selectedCandidate = state.company.candidates.find(
+        (candidate) => candidate.id === selectedCandidateId
+      );
+      crewDetails.innerHTML = '';
+      const detailTarget = selectedCrew ?? selectedCandidate;
+      if (detailTarget) {
+        const header = document.createElement('div');
+        header.className = 'crew-detail-title';
+        header.textContent = `${detailTarget.name} — ${detailTarget.role}`;
+
+        const traits = document.createElement('div');
+        traits.className = 'crew-detail-traits';
+        traits.textContent = `Traits: ${detailTarget.traits.join(', ') || 'None'}`;
+
+        const needs = document.createElement('div');
+        needs.className = 'crew-detail-needs';
+        needs.textContent = `Morale ${detailTarget.needs.morale.toFixed(0)} | Stress ${detailTarget.needs.stress.toFixed(
+          0
+        )} | Fatigue ${detailTarget.needs.fatigue.toFixed(0)} | Loyalty ${detailTarget.needs.loyalty.toFixed(0)}`;
+
+        const summary = document.createElement('div');
+        summary.className = 'crew-detail-summary';
+        summary.textContent = detailTarget.background.summary;
+
+        crewDetails.appendChild(header);
+        crewDetails.appendChild(needs);
+        crewDetails.appendChild(traits);
+        crewDetails.appendChild(summary);
+        if (detailTarget.background.contacts.length > 0) {
+          const contact = detailTarget.background.contacts[0];
+          const contactLine = document.createElement('div');
+          contactLine.className = 'crew-detail-contact';
+          contactLine.textContent = `Contact: ${contact.name} (${contact.relationship}) — ${contact.hook}`;
+          crewDetails.appendChild(contactLine);
+        }
+      }
+
+      eventPanel.innerHTML = '';
+      if (state.company.pendingEvent) {
+        const title = document.createElement('div');
+        title.className = 'event-title';
+        title.textContent = state.company.pendingEvent.title;
+        const description = document.createElement('div');
+        description.className = 'event-desc';
+        description.textContent = state.company.pendingEvent.description;
+        const choices = document.createElement('div');
+        choices.className = 'event-choices';
+        state.company.pendingEvent.choices.forEach((choice) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = choice.label;
+          button.addEventListener('click', () => actions.onResolveEventChoice(choice.id));
+          choices.appendChild(button);
+        });
+        eventPanel.appendChild(title);
+        eventPanel.appendChild(description);
+        eventPanel.appendChild(choices);
+      }
     },
     setExportText: (value: string) => {
       textarea.value = value;

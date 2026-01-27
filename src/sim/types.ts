@@ -1,5 +1,6 @@
 import type { GameMode } from './modes';
 import type { Needs } from './needs';
+import type { CompanyState } from './company/types';
 
 export interface Vec2 {
   x: number;
@@ -28,6 +29,7 @@ export interface GameState {
   inventory: InventoryState;
   needs: Needs;
   log: string[];
+  company: CompanyState;
   ship: {
     position: Vec2;
     velocity: Vec2;

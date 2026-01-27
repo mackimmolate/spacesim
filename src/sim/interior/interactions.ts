@@ -2,6 +2,7 @@ import type { GameState } from '../types';
 import { GameMode } from '../modes';
 import { applyNeedDelta } from '../needs';
 import { pushLog } from '../log';
+import { applyCrewSleep } from '../crew/crew';
 import { getNearbyObject } from './objects';
 
 const SLEEP_TIME_BONUS = 60 * 10;
@@ -27,11 +28,12 @@ export function handleInteriorInteraction(state: GameState): GameState {
       };
     }
     case 'bed': {
+      const rested = applyCrewSleep(state);
       return {
-        ...state,
-        time: state.time + SLEEP_TIME_BONUS,
-        needs: applyNeedDelta(state.needs, { fatigue: -35, stress: -8, morale: 4 }),
-        log: pushLog(state.log, 'Slept in the bunk (+10 minutes).')
+        ...rested,
+        time: rested.time + SLEEP_TIME_BONUS,
+        needs: applyNeedDelta(rested.needs, { fatigue: -35, stress: -8, morale: 4 }),
+        log: pushLog(rested.log, 'Slept in the bunk (+10 minutes).')
       };
     }
     case 'galley': {

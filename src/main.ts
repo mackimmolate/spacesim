@@ -7,6 +7,8 @@ import { advanceState } from './sim/tick';
 import { deserializeSaveState, serializeSaveState } from './sim/save';
 import { createUI } from './ui/ui';
 import { GameMode } from './sim/modes';
+import { hireCandidate, regenerateCandidates } from './sim/crew/hiring';
+import { resolveEvent } from './sim/events/events';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) {
@@ -94,6 +96,15 @@ const ui = createUI(uiWrapper, {
     }
   },
   onRegenerateVisuals: () => inputController.signalRegenerateVisuals(),
+  onGenerateCandidates: () => {
+    setState(regenerateCandidates(state));
+  },
+  onHireCandidate: (candidateId: string) => {
+    setState(hireCandidate(state, candidateId));
+  },
+  onResolveEventChoice: (choiceId: 'A' | 'B') => {
+    setState(resolveEvent(state, choiceId));
+  }
   });
 
 function handleControls(now: number): void {

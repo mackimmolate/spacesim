@@ -27,6 +27,24 @@ export function hashState(state: GameState): string {
     state.needs.fatigue.toFixed(3),
     state.needs.stress.toFixed(3),
     state.needs.morale.toFixed(3),
+    state.company.credits.toFixed(2),
+    state.company.payrollDueTime.toFixed(2),
+    state.company.maxCrew.toString(),
+    state.company.hiringSeed.toString(),
+    state.company.opsEfficiency.toFixed(3),
+    state.company.crew
+      .map((member) => [
+        member.id,
+        member.role,
+        member.payRate.toString(),
+        member.needs.stress.toFixed(2),
+        member.needs.morale.toFixed(2),
+        member.needs.fatigue.toFixed(2),
+        member.needs.loyalty.toFixed(2)
+      ].join(','))
+      .join(';'),
+    state.company.candidates.map((candidate) => candidate.id).join(';'),
+    state.company.pendingEvent ? state.company.pendingEvent.id : 'no-event',
     state.ship.position.x.toFixed(6),
     state.ship.position.y.toFixed(6),
     state.ship.velocity.x.toFixed(6),

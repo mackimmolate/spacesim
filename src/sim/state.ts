@@ -2,6 +2,7 @@ import { hashSeedToUint32 } from './rng';
 import type { GameState, SimInput, Vec2 } from './types';
 import { GameMode } from './modes';
 import { createInitialNeeds } from './needs';
+import { generateCandidates } from './crew/generate';
 
 export const DEFAULT_IMPULSE: Vec2 = { x: 0, y: 0 };
 
@@ -24,6 +25,16 @@ export function createInitialState(seed: string): GameState {
     },
     needs: createInitialNeeds(),
     log: ['Woke up aboard the ship.'],
+    company: {
+      credits: 1500,
+      payrollDueTime: 60 * 60 * 24,
+      maxCrew: 4,
+      crew: [],
+      candidates: generateCandidates(`${seed}|hire|0`, 4),
+      hiringSeed: 0,
+      opsEfficiency: 1,
+      pendingEvent: null
+    },
     ship: {
       position: { x: 0, y: 0 },
       velocity: { x: 0.6, y: 0.2 }

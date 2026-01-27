@@ -103,6 +103,13 @@ body {
   text-align: left;
 }
 
+.crew-entry.is-selected,
+.candidate-info.is-selected {
+  background: #2b3f6f;
+  border-color: rgba(160, 190, 255, 0.7);
+  box-shadow: 0 0 0 1px rgba(160, 190, 255, 0.35);
+}
+
 .crew-details {
   font-size: 0.75rem;
   display: grid;
@@ -140,6 +147,15 @@ body {
   text-align: left;
 }
 
+.candidate-empty {
+  font-size: 0.75rem;
+  color: #9fb2ec;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(12, 16, 28, 0.6);
+  border: 1px dashed rgba(120, 160, 255, 0.25);
+}
+
 .crew-event {
   display: grid;
   gap: 6px;
@@ -147,6 +163,21 @@ body {
   border-radius: 8px;
   background: rgba(20, 26, 40, 0.75);
   border: 1px solid rgba(120, 160, 255, 0.15);
+}
+
+.crew-event.event-enter {
+  animation: event-pop 220ms ease-out;
+}
+
+@keyframes event-pop {
+  0% {
+    transform: translateY(4px);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .event-title {

@@ -144,6 +144,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   let selectedCandidateId: string | null = null;
   let lastCrewKey = '';
   let lastCandidateKey = '';
+  let lastEventKey = '';
 
   container.appendChild(overlay);
 
@@ -244,6 +245,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
           const button = document.createElement('button');
           button.type = 'button';
           button.className = 'crew-entry';
+          button.dataset.crewId = member.id;
           button.textContent = `${member.name} (${member.role}) - ${member.payRate} cr/day`;
           button.addEventListener('click', () => {
             selectedCrewId = member.id;
@@ -258,35 +260,46 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         }
         lastCrewKey = crewKey;
       }
+      rosterList.querySelectorAll<HTMLButtonElement>('button.crew-entry').forEach((button) => {
+        button.classList.toggle('is-selected', button.dataset.crewId === selectedCrewId);
+      });
 
       const candidateKey = state.company.candidates
         .map((candidate) => `${candidate.id}:${candidate.signOnBonus}`)
         .join('|');
       if (candidateKey !== lastCandidateKey) {
         candidateList.innerHTML = '';
-        state.company.candidates.forEach((candidate) => {
-          const row = document.createElement('div');
-          row.className = 'candidate-row';
+        if (state.company.candidates.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'candidate-empty';
+          empty.textContent = 'No candidates available. Generate a new slate.';
+          candidateList.appendChild(empty);
+        } else {
+          state.company.candidates.forEach((candidate) => {
+            const row = document.createElement('div');
+            row.className = 'candidate-row';
 
-          const info = document.createElement('button');
-          info.type = 'button';
-          info.className = 'candidate-info';
-          info.textContent = `${candidate.name} (${candidate.role}) - bonus ${candidate.signOnBonus} cr`;
-          info.addEventListener('click', () => {
-            selectedCandidateId = candidate.id;
-            selectedCrewId = null;
+            const info = document.createElement('button');
+            info.type = 'button';
+            info.className = 'candidate-info';
+            info.dataset.candidateId = candidate.id;
+            info.textContent = `${candidate.name} (${candidate.role}) - bonus ${candidate.signOnBonus} cr`;
+            info.addEventListener('click', () => {
+              selectedCandidateId = candidate.id;
+              selectedCrewId = null;
+            });
+
+            const hire = document.createElement('button');
+            hire.type = 'button';
+            hire.className = 'candidate-hire';
+            hire.textContent = 'Hire';
+            hire.addEventListener('click', () => actions.onHireCandidate(candidate.id));
+
+            row.appendChild(info);
+            row.appendChild(hire);
+            candidateList.appendChild(row);
           });
-
-          const hire = document.createElement('button');
-          hire.type = 'button';
-          hire.className = 'candidate-hire';
-          hire.textContent = 'Hire';
-          hire.addEventListener('click', () => actions.onHireCandidate(candidate.id));
-
-          row.appendChild(info);
-          row.appendChild(hire);
-          candidateList.appendChild(row);
-        });
+        }
         if (
           selectedCandidateId &&
           !state.company.candidates.some((candidate) => candidate.id === selectedCandidateId)
@@ -295,6 +308,9 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         }
         lastCandidateKey = candidateKey;
       }
+      candidateList.querySelectorAll<HTMLButtonElement>('button.candidate-info').forEach((button) => {
+        button.classList.toggle('is-selected', button.dataset.candidateId === selectedCandidateId);
+      });
 
       const selectedCrew = state.company.crew.find((member) => member.id === selectedCrewId);
       const selectedCandidate = state.company.candidates.find(
@@ -334,26 +350,37 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         }
       }
 
-      eventPanel.innerHTML = '';
-      if (state.company.pendingEvent) {
-        const title = document.createElement('div');
-        title.className = 'event-title';
-        title.textContent = state.company.pendingEvent.title;
-        const description = document.createElement('div');
-        description.className = 'event-desc';
-        description.textContent = state.company.pendingEvent.description;
-        const choices = document.createElement('div');
-        choices.className = 'event-choices';
-        state.company.pendingEvent.choices.forEach((choice) => {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.textContent = choice.label;
-          button.addEventListener('click', () => actions.onResolveEventChoice(choice.id));
-          choices.appendChild(button);
-        });
-        eventPanel.appendChild(title);
-        eventPanel.appendChild(description);
-        eventPanel.appendChild(choices);
+      const eventKey = state.company.pendingEvent
+        ? `${state.company.pendingEvent.id}:${state.company.pendingEvent.choices
+            .map((choice) => choice.id)
+            .join(',')}`
+        : '';
+      if (eventKey !== lastEventKey) {
+        eventPanel.innerHTML = '';
+        if (state.company.pendingEvent) {
+          const title = document.createElement('div');
+          title.className = 'event-title';
+          title.textContent = state.company.pendingEvent.title;
+          const description = document.createElement('div');
+          description.className = 'event-desc';
+          description.textContent = state.company.pendingEvent.description;
+          const choices = document.createElement('div');
+          choices.className = 'event-choices';
+          state.company.pendingEvent.choices.forEach((choice) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = choice.label;
+            button.addEventListener('click', () => actions.onResolveEventChoice(choice.id));
+            choices.appendChild(button);
+          });
+          eventPanel.appendChild(title);
+          eventPanel.appendChild(description);
+          eventPanel.appendChild(choices);
+          eventPanel.classList.remove('event-enter');
+          void eventPanel.offsetWidth;
+          eventPanel.classList.add('event-enter');
+        }
+        lastEventKey = eventKey;
       }
     },
     setExportText: (value: string) => {

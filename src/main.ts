@@ -92,9 +92,8 @@ const ui = createUI(uiWrapper, {
       ui.setStatusMessage(`Import failed: ${(error as Error).message}`);
     }
   },
-  onRegenerateVisuals: () => inputController.signalRegenerateVisuals()
-  }
-});
+  onRegenerateVisuals: () => inputController.signalRegenerateVisuals(),
+  });
 
 function handleControls(now: number): void {
   const snapshot = inputController.consume();

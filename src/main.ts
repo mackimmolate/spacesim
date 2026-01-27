@@ -105,7 +105,7 @@ const ui = createUI(uiWrapper, {
   onResolveEventChoice: (choiceId: 'A' | 'B') => {
     setState(resolveEvent(state, choiceId));
   }
-  });
+});
 
 function handleControls(now: number): void {
   const snapshot = inputController.consume();

@@ -55,21 +55,21 @@ src/
 * **N**: new simulation seed.
 * **Regenerate Visuals**: keeps the sim state but rebuilds the starfield/planets with a new render seed.
 
-## GitHub Pages (user site) deploy
+## GitHub Pages (project site) deploy
 
-This repository is a **GitHub user site**, so the Vite `base` is set to `/` for production builds.
+This repository is a **GitHub project site**, so the Vite `base` is set to `/spacesim/` for production builds.
 
 ### Workflow
 The GitHub Actions workflow builds and deploys the `dist/` directory to GitHub Pages.
 
-1. In GitHub, go to **Settings → Pages**.
+1. In GitHub, go to **Settings -> Pages**.
 2. Set **Source** to **GitHub Actions**.
 3. Push to the default branch (or run the workflow manually).
 
 The deployment URL appears in the **Actions** run output and under the **github-pages** environment. The site will be available at:
 
 ```
-https://<username>.github.io/
+https://<username>.github.io/spacesim/
 ```
 
 ## Post-build SPA refresh fix

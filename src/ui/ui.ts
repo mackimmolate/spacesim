@@ -208,7 +208,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         )} z=${state.camera.zoom.toFixed(2)}</div>
       `;
       modeIndicator.textContent = `Mode: ${state.mode}`;
-      modeBanner.textContent = state.mode === 'Command' ? 'Command Mode — ESC to leave chair' : '';
+      modeBanner.textContent = state.mode === 'Command' ? 'Command Mode - ESC to leave chair' : '';
       modeBanner.style.opacity = state.mode === 'Command' ? '1' : '0';
       controlsHint.textContent =
         state.mode === 'Command'
@@ -238,7 +238,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'crew-entry';
-        button.textContent = `${member.name} (${member.role}) — ${member.payRate} cr/day`;
+        button.textContent = `${member.name} (${member.role}) - ${member.payRate} cr/day`;
         button.addEventListener('click', () => {
           selectedCrewId = member.id;
           selectedCandidateId = null;
@@ -256,7 +256,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         const info = document.createElement('button');
         info.type = 'button';
         info.className = 'candidate-info';
-        info.textContent = `${candidate.name} (${candidate.role}) — bonus ${candidate.signOnBonus} cr`;
+        info.textContent = `${candidate.name} (${candidate.role}) - bonus ${candidate.signOnBonus} cr`;
         info.addEventListener('click', () => {
           selectedCandidateId = candidate.id;
           selectedCrewId = null;
@@ -282,7 +282,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
       if (detailTarget) {
         const header = document.createElement('div');
         header.className = 'crew-detail-title';
-        header.textContent = `${detailTarget.name} — ${detailTarget.role}`;
+        header.textContent = `${detailTarget.name} - ${detailTarget.role}`;
 
         const traits = document.createElement('div');
         traits.className = 'crew-detail-traits';
@@ -306,7 +306,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
           const contact = detailTarget.background.contacts[0];
           const contactLine = document.createElement('div');
           contactLine.className = 'crew-detail-contact';
-          contactLine.textContent = `Contact: ${contact.name} (${contact.relationship}) — ${contact.hook}`;
+          contactLine.textContent = `Contact: ${contact.name} (${contact.relationship}) - ${contact.hook}`;
           crewDetails.appendChild(contactLine);
         }
       }

@@ -39,8 +39,9 @@ body {
 .ui-layout {
   position: absolute;
   inset: 16px;
-  display: grid;
-  grid-template-columns: minmax(260px, 360px) 1fr minmax(320px, 380px);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: 16px;
   pointer-events: none;
 }
@@ -50,10 +51,16 @@ body {
   flex-direction: column;
   gap: 12px;
   min-height: 0;
+  max-height: calc(100vh - 32px);
+  pointer-events: auto;
+}
+
+.ui-column-left {
+  width: clamp(260px, 28vw, 360px);
 }
 
 .ui-column-right {
-  grid-column: 3;
+  width: clamp(320px, 32vw, 380px);
 }
 
 .ui-column > * {
@@ -404,8 +411,14 @@ button:hover {
 
 @media (max-width: 980px) {
   .ui-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    inset: 12px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ui-column-left,
+  .ui-column-right {
+    width: 100%;
   }
 
   .sector-viewport {

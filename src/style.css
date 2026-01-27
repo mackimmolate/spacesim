@@ -1,0 +1,90 @@
+:root {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #e8eef9;
+  background-color: #02030a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #02030a;
+}
+
+#app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.canvas-wrapper,
+.ui-wrapper {
+  position: absolute;
+  inset: 0;
+}
+
+.overlay {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(8, 12, 24, 0.75);
+  border: 1px solid rgba(120, 160, 255, 0.2);
+  border-radius: 12px;
+  max-width: 360px;
+  backdrop-filter: blur(6px);
+}
+
+.status {
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.button-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+button {
+  background: #1c2a4a;
+  color: #f5f8ff;
+  border: 1px solid rgba(120, 160, 255, 0.35);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #273861;
+}
+
+.import-area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+textarea {
+  min-height: 120px;
+  background: rgba(2, 6, 20, 0.9);
+  color: #e8eef9;
+  border: 1px solid rgba(120, 160, 255, 0.3);
+  border-radius: 8px;
+  padding: 6px;
+  font-size: 0.75rem;
+  resize: vertical;
+}
+
+.message {
+  font-size: 0.75rem;
+  color: #9bb1ff;
+}

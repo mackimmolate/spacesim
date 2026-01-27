@@ -193,6 +193,9 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   let lastCrewKey = '';
   let lastCandidateKey = '';
   let lastEventKey = '';
+  let lastTravelKey = '';
+  let lastAvailableKey = '';
+  let lastActiveKey = '__init__';
 
   container.appendChild(overlay);
 
@@ -405,7 +408,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         : '';
       if (eventKey !== lastEventKey) {
         eventPanel.innerHTML = '';
-      if (state.company.pendingEvent) {
+        if (state.company.pendingEvent) {
           const title = document.createElement('div');
           title.className = 'event-title';
           title.textContent = state.company.pendingEvent.title;
@@ -434,7 +437,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
       const currentNode = state.sector.nodes.find((node) => node.id === state.sectorShip.nodeId);
       const transit = state.sectorShip.inTransit;
       const locationLabel = transit
-        ? `In Transit → ${state.sector.nodes.find((node) => node.id === transit.toId)?.name ?? transit.toId}`
+        ? `In Transit -> ${state.sector.nodes.find((node) => node.id === transit.toId)?.name ?? transit.toId}`
         : `Docked: ${currentNode?.name ?? state.sectorShip.nodeId}`;
       shipStats.textContent = `${locationLabel} | Fuel ${state.shipStats.fuel.toFixed(0)}/${
         state.shipStats.fuelMax
@@ -444,67 +447,95 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         state.shipStats.scannerKits
       } | Survey ${state.shipStats.surveyData}`;
 
-      travelList.innerHTML = '';
-      state.sector.nodes.forEach((node) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'travel-entry';
-        button.textContent = node.name;
-        button.disabled = Boolean(state.sectorShip.inTransit) || node.id === state.sectorShip.nodeId;
-        button.addEventListener('click', () => actions.onSetDestination(node.id));
-        travelList.appendChild(button);
+      const travelKey = [
+        state.sectorShip.nodeId,
+        transit ? `${transit.fromId}:${transit.toId}` : 'docked',
+        state.sector.nodes.map((node) => node.id).join('|')
+      ].join('|');
+      if (travelKey !== lastTravelKey) {
+        travelList.innerHTML = '';
+        state.sector.nodes.forEach((node) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'travel-entry';
+          button.dataset.nodeId = node.id;
+          button.textContent = node.name;
+          button.addEventListener('click', () => actions.onSetDestination(node.id));
+          travelList.appendChild(button);
+        });
+        lastTravelKey = travelKey;
+      }
+      travelList.querySelectorAll<HTMLButtonElement>('button.travel-entry').forEach((button) => {
+        const nodeId = button.dataset.nodeId ?? '';
+        button.disabled = Boolean(state.sectorShip.inTransit) || nodeId === state.sectorShip.nodeId;
       });
 
       const availableContracts = state.contracts.contracts.filter(
         (contract) => contract.status === 'Available' && contract.fromNodeId === state.sectorShip.nodeId
       );
-      availableList.innerHTML = '';
-      availableContracts.forEach((contract) => {
-        const row = document.createElement('div');
-        row.className = 'contract-row';
-        const label = document.createElement('div');
-        label.className = 'contract-info';
-        label.textContent = `${contract.type} — ${contract.rewardCredits} cr`;
-        const accept = document.createElement('button');
-        accept.type = 'button';
-        accept.textContent = 'Accept';
-        accept.addEventListener('click', () => actions.onAcceptContract(contract.id));
-        row.appendChild(label);
-        row.appendChild(accept);
-        availableList.appendChild(row);
-      });
-      if (availableContracts.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'contract-empty';
-        empty.textContent = 'No contracts available here.';
-        availableList.appendChild(empty);
+      const availableKey = [
+        state.sectorShip.nodeId,
+        availableContracts.map((contract) => contract.id).join('|')
+      ].join('|');
+      if (availableKey !== lastAvailableKey) {
+        availableList.innerHTML = '';
+        availableContracts.forEach((contract) => {
+          const row = document.createElement('div');
+          row.className = 'contract-row';
+          const label = document.createElement('div');
+          label.className = 'contract-info';
+          label.textContent = `${contract.type} - ${contract.rewardCredits} cr`;
+          const accept = document.createElement('button');
+          accept.type = 'button';
+          accept.textContent = 'Accept';
+          accept.addEventListener('click', () => actions.onAcceptContract(contract.id));
+          row.appendChild(label);
+          row.appendChild(accept);
+          availableList.appendChild(row);
+        });
+        if (availableContracts.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'contract-empty';
+          empty.textContent = 'No contracts available here.';
+          availableList.appendChild(empty);
+        }
+        lastAvailableKey = availableKey;
       }
 
       const activeContracts = state.contracts.contracts.filter(
         (contract) => contract.status === 'Accepted' || contract.status === 'InProgress'
       );
-      activeList.innerHTML = '';
-      activeContracts.forEach((contract) => {
-        const row = document.createElement('div');
-        row.className = 'contract-row';
-        const label = document.createElement('div');
-        label.className = 'contract-info';
-        label.textContent = `${contract.type} (${contract.status})`;
-        row.appendChild(label);
-        if (contract.status === 'Accepted') {
-          const action = document.createElement('button');
-          action.type = 'button';
-          action.textContent = contract.type === 'InstallScanner' ? 'Deploy' : contract.type === 'Salvage' ? 'Salvage' : 'Begin Tow';
-          action.addEventListener('click', () => actions.onStartContractAction(contract.id));
-          row.appendChild(action);
+      const activeKey = activeContracts.map((contract) => `${contract.id}:${contract.status}`).join('|');
+      if (activeKey !== lastActiveKey) {
+        activeList.innerHTML = '';
+        activeContracts.forEach((contract) => {
+          const row = document.createElement('div');
+          row.className = 'contract-row';
+          const label = document.createElement('div');
+          label.className = 'contract-info';
+          label.textContent = `${contract.type} (${contract.status})`;
+          row.appendChild(label);
+          if (contract.status === 'Accepted') {
+            const action = document.createElement('button');
+            action.type = 'button';
+            action.textContent =
+              contract.type === 'InstallScanner'
+                ? 'Deploy'
+                : contract.type === 'Salvage'
+                  ? 'Salvage'
+                  : 'Begin Tow';
+            action.addEventListener('click', () => actions.onStartContractAction(contract.id));
+            row.appendChild(action);
+          }
+          activeList.appendChild(row);
+        });
+        if (activeContracts.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'contract-empty';
+          empty.textContent = 'No active contracts.';
+          activeList.appendChild(empty);
         }
-        activeList.appendChild(row);
-      });
-      if (activeContracts.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'contract-empty';
-        empty.textContent = 'No active contracts.';
-        activeList.appendChild(empty);
+        lastActiveKey = activeKey;
       }
 
       tracker.textContent = '';
@@ -533,3 +564,4 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     }
   };
 }
+

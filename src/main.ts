@@ -52,6 +52,13 @@ function resetState(keepSeed = true): void {
   setState(createInitialState(seed));
 }
 
+function setDestination(nodeId: string): void {
+  if (state.mode !== GameMode.Command) {
+    return;
+  }
+  setState(startTravel(state, nodeId));
+}
+
 const ui = createUI(uiWrapper, {
   onTogglePause: () => inputController.signalTogglePause(),
   onStepOnce: () => inputController.signalStepOnce(),
@@ -108,10 +115,7 @@ const ui = createUI(uiWrapper, {
     setState(resolveEvent(state, choiceId));
   },
   onSetDestination: (nodeId: string) => {
-    if (state.mode !== GameMode.Command) {
-      return;
-    }
-    setState(startTravel(state, nodeId));
+    setDestination(nodeId);
   },
   onAcceptContract: (contractId: string) => {
     setState(acceptContract(state, contractId));
@@ -120,6 +124,10 @@ const ui = createUI(uiWrapper, {
     setState(startContractOperation(state, contractId));
   }
   });
+
+renderer.setSectorClickHandler((nodeId) => {
+  setDestination(nodeId);
+});
 
 function handleControls(now: number): void {
   const snapshot = inputController.consume();

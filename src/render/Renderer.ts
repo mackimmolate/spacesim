@@ -35,6 +35,9 @@ export class Renderer {
   private currentSeed = '';
   private descriptor: SpaceDescriptor | null = null;
   private lastMode: GameMode | null = null;
+  private sectorClickHandler: ((nodeId: string) => void) | null = null;
+  private lastState: GameState | null = null;
+  private readonly onPointerDown = (event: PointerEvent) => this.handleSectorClick(event);
 
   constructor(container: HTMLElement) {
     PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
@@ -47,6 +50,7 @@ export class Renderer {
     });
 
     container.appendChild(this.app.view as HTMLCanvasElement);
+    this.app.view.addEventListener('pointerdown', this.onPointerDown);
 
     this.planetContainer = new PIXI.Container();
     this.planetContainer.zIndex = 2;
@@ -235,6 +239,7 @@ export class Renderer {
   }
 
   render(state: GameState): void {
+    this.lastState = state;
     if (state.renderSeed !== this.currentSeed) {
       this.rebuildSpace(state.renderSeed);
     }
@@ -291,7 +296,36 @@ export class Renderer {
     }
   }
 
+  setSectorClickHandler(handler: ((nodeId: string) => void) | null): void {
+    this.sectorClickHandler = handler;
+  }
+
+  private handleSectorClick(event: PointerEvent): void {
+    if (!this.lastState || this.lastState.mode !== GameMode.Command) {
+      return;
+    }
+    if (event.button !== 0) {
+      return;
+    }
+    const rect = this.app.view.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      return;
+    }
+    const scaleX = this.app.renderer.width / rect.width;
+    const scaleY = this.app.renderer.height / rect.height;
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
+    const localX = x - this.app.renderer.width / 2;
+    const localY = y - this.app.renderer.height / 2;
+    const node = this.sector.pickNode(this.lastState.sector.nodes, localX, localY);
+    if (!node || !this.sectorClickHandler) {
+      return;
+    }
+    this.sectorClickHandler(node.id);
+  }
+
   destroy(): void {
+    this.app.view.removeEventListener('pointerdown', this.onPointerDown);
     this.app.destroy(true, { children: true, texture: true, baseTexture: true });
   }
 }

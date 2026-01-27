@@ -9,6 +9,7 @@ const OUTPOST_COLOR = 0x9bd57f;
 const FIELD_COLOR = 0xc0a36b;
 const SHIP_COLOR = 0xffd36b;
 const DEST_COLOR = 0xff7a7a;
+const PICK_RADIUS = NODE_RADIUS + 6;
 
 export class SectorRenderer {
   readonly container: PIXI.Container;
@@ -87,6 +88,22 @@ export class SectorRenderer {
     }
     this.destination.lineStyle(2, DEST_COLOR, 0.9);
     this.destination.drawCircle(node.x, node.y, NODE_RADIUS + 6);
+  }
+
+  pickNode(nodes: SectorNode[], x: number, y: number): SectorNode | null {
+    let best: SectorNode | null = null;
+    let bestDist = Infinity;
+    const radiusSq = PICK_RADIUS * PICK_RADIUS;
+    nodes.forEach((node) => {
+      const dx = node.x - x;
+      const dy = node.y - y;
+      const dist = dx * dx + dy * dy;
+      if (dist <= radiusSq && dist < bestDist) {
+        best = node;
+        bestDist = dist;
+      }
+    });
+    return best;
   }
 
   render(state: GameState, width: number, height: number): void {

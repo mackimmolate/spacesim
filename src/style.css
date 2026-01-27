@@ -33,6 +33,7 @@ body {
 
 .ui-wrapper {
   z-index: 1;
+  pointer-events: none;
 }
 
 .overlay {
@@ -49,6 +50,7 @@ body {
   max-width: 360px;
   backdrop-filter: blur(6px);
   z-index: 1;
+  pointer-events: auto;
 }
 
 .mode-banner {
@@ -64,6 +66,7 @@ body {
   border-radius: 8px;
   opacity: 0;
   transition: opacity 0.2s ease;
+  pointer-events: auto;
 }
 
 .crew-panel {
@@ -81,6 +84,7 @@ body {
   border-radius: 12px;
   backdrop-filter: blur(6px);
   z-index: 2;
+  pointer-events: auto;
 }
 
 .contracts-panel {
@@ -98,6 +102,7 @@ body {
   border-radius: 12px;
   backdrop-filter: blur(6px);
   z-index: 2;
+  pointer-events: auto;
 }
 
 .contracts-header {

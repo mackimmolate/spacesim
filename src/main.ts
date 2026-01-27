@@ -40,6 +40,7 @@ function generateSeed(): string {
 }
 
 let state = createInitialState(generateSeed());
+let sectorMapVisible = true;
 
 function setState(nextState: typeof state): void {
   state = nextState;
@@ -128,6 +129,8 @@ const ui = createUI(uiWrapper, {
 renderer.setSectorClickHandler((nodeId) => {
   setDestination(nodeId);
 });
+ui.setSectorMapVisible(sectorMapVisible);
+renderer.setSectorMapVisible(sectorMapVisible);
 
 function handleControls(now: number): void {
   const snapshot = inputController.consume();
@@ -149,6 +152,11 @@ function handleControls(now: number): void {
   if (snapshot.controls.regenerateVisuals) {
     setState({ ...state, renderSeed: generateSeed() });
     ui.setStatusMessage('Regenerated visuals with a new render seed.');
+  }
+  if (snapshot.controls.toggleSectorMap) {
+    sectorMapVisible = !sectorMapVisible;
+    ui.setSectorMapVisible(sectorMapVisible);
+    renderer.setSectorMapVisible(sectorMapVisible);
   }
 
   const baseInput = { ...snapshot.sim };
@@ -178,8 +186,9 @@ function handleControls(now: number): void {
 
 function frame(now: number): void {
   handleControls(now);
-  renderer.render(state);
   ui.update(state, engine);
+  renderer.setSectorViewport(ui.getSectorMapRect());
+  renderer.render(state);
   requestAnimationFrame(frame);
 }
 

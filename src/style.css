@@ -105,6 +105,39 @@ body {
   pointer-events: auto;
 }
 
+.sector-panel {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  width: 260px;
+  display: grid;
+  gap: 6px;
+  color: #cbd5f4;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.sector-panel.is-inactive {
+  opacity: 0.6;
+}
+
+.sector-header {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9fb2ec;
+}
+
+.sector-viewport {
+  width: 260px;
+  height: 210px;
+}
+
+.sector-hint {
+  font-size: 0.7rem;
+  color: #9fb2ec;
+}
+
 .contracts-header {
   font-weight: 700;
   font-size: 0.95rem;

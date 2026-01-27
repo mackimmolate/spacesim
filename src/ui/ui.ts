@@ -25,6 +25,8 @@ export interface UIHandle {
   update: (state: GameState, engine: Engine) => void;
   setExportText: (value: string) => void;
   setStatusMessage: (message: string) => void;
+  setSectorMapVisible: (visible: boolean) => void;
+  getSectorMapRect: () => DOMRect | null;
 }
 
 export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
@@ -42,6 +44,10 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const contractsPanel = document.createElement('div');
   contractsPanel.className = 'contracts-panel';
   container.appendChild(contractsPanel);
+
+  const sectorPanel = document.createElement('div');
+  sectorPanel.className = 'sector-panel';
+  container.appendChild(sectorPanel);
 
   const modeIndicator = document.createElement('div');
   modeIndicator.className = 'mode-indicator';
@@ -188,6 +194,21 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   contractsPanel.appendChild(activeList);
   contractsPanel.appendChild(tracker);
 
+  const sectorHeader = document.createElement('div');
+  sectorHeader.className = 'sector-header';
+  sectorHeader.textContent = 'Sector Map (M)';
+
+  const sectorViewport = document.createElement('div');
+  sectorViewport.className = 'sector-viewport';
+
+  const sectorHint = document.createElement('div');
+  sectorHint.className = 'sector-hint';
+  sectorHint.textContent = 'Click a node to travel.';
+
+  sectorPanel.appendChild(sectorHeader);
+  sectorPanel.appendChild(sectorViewport);
+  sectorPanel.appendChild(sectorHint);
+
   let selectedCrewId: string | null = null;
   let selectedCandidateId: string | null = null;
   let lastCrewKey = '';
@@ -266,8 +287,12 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
       modeBanner.style.opacity = state.mode === 'Command' ? '1' : '0';
       controlsHint.textContent =
         state.mode === 'Command'
-          ? 'Pan: WASD/Arrows | Zoom: +/- | Exit: ESC'
+          ? 'Pan: WASD/Arrows | Zoom: +/- | Exit: ESC | Map: M'
           : 'Move: WASD/Arrows | Interact: E | Chair: E';
+
+      const canTravel = state.mode === 'Command';
+      sectorPanel.classList.toggle('is-inactive', !canTravel);
+      sectorHint.textContent = canTravel ? 'Click a node to travel.' : 'Sit in the command chair to travel.';
 
       updateNeedRow(needRows.hunger, state.needs.hunger);
       updateNeedRow(needRows.thirst, state.needs.thirst);
@@ -561,6 +586,15 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     },
     setStatusMessage: (value: string) => {
       message.textContent = value;
+    },
+    setSectorMapVisible: (visible: boolean) => {
+      sectorPanel.style.display = visible ? 'grid' : 'none';
+    },
+    getSectorMapRect: () => {
+      if (sectorPanel.style.display === 'none') {
+        return null;
+      }
+      return sectorViewport.getBoundingClientRect();
     }
   };
 }

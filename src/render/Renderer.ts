@@ -38,6 +38,11 @@ export class Renderer {
   private sectorClickHandler: ((nodeId: string) => void) | null = null;
   private lastState: GameState | null = null;
   private readonly onPointerDown = (event: PointerEvent) => this.handleSectorClick(event);
+  private readonly onPointerMove = (event: PointerEvent) => this.handleSectorHover(event);
+  private readonly onPointerLeave = () => this.clearSectorHover();
+  private sectorViewport: DOMRect | null = null;
+  private sectorMapVisible = true;
+  private hoveredSectorNodeId: string | null = null;
 
   constructor(container: HTMLElement) {
     PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
@@ -51,6 +56,8 @@ export class Renderer {
 
     container.appendChild(this.app.view as HTMLCanvasElement);
     this.app.view.addEventListener('pointerdown', this.onPointerDown);
+    this.app.view.addEventListener('pointermove', this.onPointerMove);
+    this.app.view.addEventListener('pointerleave', this.onPointerLeave);
 
     this.planetContainer = new PIXI.Container();
     this.planetContainer.zIndex = 2;
@@ -290,14 +297,47 @@ export class Renderer {
         width / 2 + (state.ship.position.x - state.camera.x) * scale,
         height / 2 + (state.ship.position.y - state.camera.y) * scale
       );
-      this.sector.render(state, width, height);
+      this.sector.setViewport(this.getSectorViewport());
+      this.sector.setSelectedNode(state.sectorShip.inTransit?.toId ?? state.sectorShip.nodeId);
+      this.sector.render(state);
     } else {
       this.interior.render(state, width, height);
     }
   }
 
+  setSectorViewport(rect: DOMRect | null): void {
+    this.sectorViewport = rect;
+  }
+
+  setSectorMapVisible(visible: boolean): void {
+    this.sectorMapVisible = visible;
+    if (!visible) {
+      this.clearSectorHover();
+    }
+  }
+
   setSectorClickHandler(handler: ((nodeId: string) => void) | null): void {
     this.sectorClickHandler = handler;
+  }
+
+  private getSectorViewport(): { x: number; y: number; width: number; height: number } | null {
+    if (!this.sectorMapVisible || !this.sectorViewport || !this.lastState) {
+      return null;
+    }
+    if (this.lastState.mode !== GameMode.Command) {
+      return null;
+    }
+    const canvasRect = this.app.view.getBoundingClientRect();
+    if (canvasRect.width === 0 || canvasRect.height === 0) {
+      return null;
+    }
+    const scaleX = this.app.renderer.width / canvasRect.width;
+    const scaleY = this.app.renderer.height / canvasRect.height;
+    const x = (this.sectorViewport.left - canvasRect.left) * scaleX;
+    const y = (this.sectorViewport.top - canvasRect.top) * scaleY;
+    const width = this.sectorViewport.width * scaleX;
+    const height = this.sectorViewport.height * scaleY;
+    return { x, y, width, height };
   }
 
   private handleSectorClick(event: PointerEvent): void {
@@ -307,25 +347,63 @@ export class Renderer {
     if (event.button !== 0) {
       return;
     }
-    const rect = this.app.view.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) {
+    const viewport = this.getSectorViewport();
+    const point = this.eventToRendererPoint(event);
+    if (!viewport || !point) {
       return;
     }
-    const scaleX = this.app.renderer.width / rect.width;
-    const scaleY = this.app.renderer.height / rect.height;
-    const x = (event.clientX - rect.left) * scaleX;
-    const y = (event.clientY - rect.top) * scaleY;
-    const localX = x - this.app.renderer.width / 2;
-    const localY = y - this.app.renderer.height / 2;
-    const node = this.sector.pickNode(this.lastState.sector.nodes, localX, localY);
+    const node = this.sector.pickNodeAtScreen(this.lastState.sector.nodes, point.x, point.y);
     if (!node || !this.sectorClickHandler) {
       return;
     }
     this.sectorClickHandler(node.id);
   }
 
+  private handleSectorHover(event: PointerEvent): void {
+    if (!this.lastState || this.lastState.mode !== GameMode.Command) {
+      this.clearSectorHover();
+      return;
+    }
+    const viewport = this.getSectorViewport();
+    const point = this.eventToRendererPoint(event);
+    if (!viewport || !point) {
+      this.clearSectorHover();
+      return;
+    }
+    const node = this.sector.pickNodeAtScreen(this.lastState.sector.nodes, point.x, point.y);
+    const nextId = node?.id ?? null;
+    this.app.view.style.cursor = nextId ? 'pointer' : '';
+    if (nextId !== this.hoveredSectorNodeId) {
+      this.hoveredSectorNodeId = nextId;
+      this.sector.setHoverNode(nextId);
+    }
+  }
+
+  private clearSectorHover(): void {
+    if (this.hoveredSectorNodeId) {
+      this.hoveredSectorNodeId = null;
+      this.sector.setHoverNode(null);
+    }
+    this.app.view.style.cursor = '';
+  }
+
+  private eventToRendererPoint(event: PointerEvent): { x: number; y: number } | null {
+    const rect = this.app.view.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      return null;
+    }
+    const scaleX = this.app.renderer.width / rect.width;
+    const scaleY = this.app.renderer.height / rect.height;
+    return {
+      x: (event.clientX - rect.left) * scaleX,
+      y: (event.clientY - rect.top) * scaleY
+    };
+  }
+
   destroy(): void {
     this.app.view.removeEventListener('pointerdown', this.onPointerDown);
+    this.app.view.removeEventListener('pointermove', this.onPointerMove);
+    this.app.view.removeEventListener('pointerleave', this.onPointerLeave);
     this.app.destroy(true, { children: true, texture: true, baseTexture: true });
   }
 }

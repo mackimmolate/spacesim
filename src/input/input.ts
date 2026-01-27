@@ -7,6 +7,7 @@ export interface ControlInput {
   newSeed: boolean;
   resetCamera: boolean;
   regenerateVisuals: boolean;
+  toggleSectorMap: boolean;
 }
 
 export interface InputSnapshot {
@@ -20,7 +21,8 @@ const EMPTY_CONTROLS: ControlInput = {
   cycleSpeed: false,
   newSeed: false,
   resetCamera: false,
-  regenerateVisuals: false
+  regenerateVisuals: false,
+  toggleSectorMap: false
 };
 
 export function createInputController(): {
@@ -31,6 +33,7 @@ export function createInputController(): {
   signalNewSeed: () => void;
   signalResetCamera: () => void;
   signalRegenerateVisuals: () => void;
+  signalToggleSectorMap: () => void;
 } {
   let pendingControls: ControlInput = { ...EMPTY_CONTROLS };
   const simInput: SimInput = {
@@ -104,6 +107,9 @@ export function createInputController(): {
       case 'KeyR':
         mergeFlag('resetCamera');
         break;
+      case 'KeyM':
+        mergeFlag('toggleSectorMap');
+        break;
       case 'KeyE':
         if (!event.repeat) {
           pendingInteract = true;
@@ -133,6 +139,7 @@ export function createInputController(): {
     signalCycleSpeed: () => mergeFlag('cycleSpeed'),
     signalNewSeed: () => mergeFlag('newSeed'),
     signalResetCamera: () => mergeFlag('resetCamera'),
-    signalRegenerateVisuals: () => mergeFlag('regenerateVisuals')
+    signalRegenerateVisuals: () => mergeFlag('regenerateVisuals'),
+    signalToggleSectorMap: () => mergeFlag('toggleSectorMap')
   };
 }

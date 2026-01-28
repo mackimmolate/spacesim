@@ -1,4 +1,5 @@
 import type { GameState } from '../sim/types';
+import type { SectorNode } from '../sim/sector/types';
 import type { Engine } from '../engine/Engine';
 import { GameMode } from '../sim/modes';
 
@@ -251,7 +252,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const PICK_RADIUS = NODE_RADIUS + 6;
   const FRAME_PADDING = 12;
 
-  function computeMapScale(nodes: { x: number; y: number }[], width: number, height: number) {
+  function computeMapScale<T extends { x: number; y: number }>(nodes: T[], width: number, height: number) {
     let maxRadius = 1;
     nodes.forEach((node) => {
       const radius = Math.hypot(node.x, node.y);
@@ -263,8 +264,8 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     return size > 0 ? size / (maxRadius * 2) : 1;
   }
 
-  function pickNode(nodes: { id: string; x: number; y: number }[], x: number, y: number) {
-    let best: { id: string; x: number; y: number } | null = null;
+  function pickNode<T extends { id: string; x: number; y: number }>(nodes: T[], x: number, y: number) {
+    let best: T | null = null;
     let bestDist = Infinity;
     const radiusSq = PICK_RADIUS * PICK_RADIUS;
     nodes.forEach((node) => {
@@ -304,7 +305,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     const centerY = rect.height / 2;
     const worldX = (localX - centerX) / mapScale;
     const worldY = (localY - centerY) / mapScale;
-    const node = pickNode(lastState.sector.nodes, worldX, worldY);
+    const node = pickNode<SectorNode>(lastState.sector.nodes, worldX, worldY);
     if (!node) {
       sectorTooltip.style.display = 'none';
       hoveredSectorId = null;

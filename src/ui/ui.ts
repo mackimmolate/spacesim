@@ -1,5 +1,6 @@
 import type { GameState } from '../sim/types';
 import type { Engine } from '../engine/Engine';
+import { GameMode } from '../sim/modes';
 
 export interface UIActions {
   onTogglePause: () => void;
@@ -57,6 +58,12 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const modeIndicator = document.createElement('div');
   modeIndicator.className = 'mode-indicator';
 
+  const statusStrip = document.createElement('div');
+  statusStrip.className = 'status-strip';
+
+  const cameraHint = document.createElement('div');
+  cameraHint.className = 'camera-hint';
+
   const needsContainer = document.createElement('div');
   needsContainer.className = 'needs';
 
@@ -93,9 +100,12 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
 
   const message = document.createElement('div');
   message.className = 'message';
+  message.style.display = 'none';
 
+  overlay.appendChild(statusStrip);
   overlay.appendChild(status);
   overlay.appendChild(modeIndicator);
+  overlay.appendChild(cameraHint);
   overlay.appendChild(needsContainer);
   overlay.appendChild(controlsHint);
   overlay.appendChild(logContainer);
@@ -198,6 +208,27 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   let lastEventKey = '';
   let lastAvailableKey = '';
   let lastActiveKey = '__init__';
+  let toastTimeout: number | null = null;
+
+  function setControlsHint(tokens: string[]) {
+    controlsHint.innerHTML = '';
+    tokens.forEach((token) => {
+      const chip = document.createElement('span');
+      chip.className = 'control-chip';
+      chip.textContent = token;
+      controlsHint.appendChild(chip);
+    });
+  }
+
+  function setStatusStrip(items: Array<{ label: string; value: string; tone?: string }>) {
+    statusStrip.innerHTML = '';
+    items.forEach((item) => {
+      const entry = document.createElement('div');
+      entry.className = `status-item${item.tone ? ` is-${item.tone}` : ''}`;
+      entry.innerHTML = `<strong>${item.label}</strong> ${item.value}`;
+      statusStrip.appendChild(entry);
+    });
+  }
 
   function createNeedRow(label: string, min: number, max: number) {
     const row = document.createElement('div');
@@ -261,17 +292,29 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
           1
         )} z=${state.camera.zoom.toFixed(2)}</div>
       `;
-      modeIndicator.textContent = `Mode: ${state.mode}`;
-      modeBanner.textContent = state.mode === 'Command' ? 'Command Mode - ESC to leave chair' : '';
-      modeBanner.style.opacity = state.mode === 'Command' ? '1' : '0';
-      controlsHint.textContent =
+      modeIndicator.textContent = state.mode === 'Command' ? 'Command Mode' : 'Avatar Mode';
+      modeBanner.textContent =
         state.mode === 'Command'
-          ? 'Pan: WASD/Arrows | Zoom: Wheel | Exit: ESC | Map: M'
-          : 'Move: WASD/Arrows | Interact: E | Chair: E';
+          ? 'Command Mode — ESC to leave chair'
+          : 'Avatar Mode — Press E at the chair';
+      modeBanner.style.opacity = '1';
+      setControlsHint(
+        state.mode === 'Command'
+          ? ['WASD/Arrows: Pan', 'Wheel: Zoom', 'R: Reset View', 'ESC: Exit', 'M: Map']
+          : ['WASD/Arrows: Move', 'E: Interact', 'E: Chair', 'M: Map']
+      );
 
       const canTravel = state.mode === 'Command';
       sectorPanel.classList.toggle('is-inactive', !canTravel);
       sectorHint.textContent = canTravel ? 'Click a node to travel.' : 'Sit in the command chair to travel.';
+
+      const cameraOffset =
+        Math.abs(state.camera.x) > 0.5 ||
+        Math.abs(state.camera.y) > 0.5 ||
+        Math.abs(state.camera.zoom - 1) > 0.01;
+      cameraHint.textContent =
+        state.mode === GameMode.Command && cameraOffset ? 'View offset — press R to reset' : '';
+      cameraHint.style.display = cameraHint.textContent ? 'block' : 'none';
 
       updateNeedRow(needRows.hunger, state.needs.hunger);
       updateNeedRow(needRows.thirst, state.needs.thirst);
@@ -457,6 +500,19 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         state.shipStats.scannerKits
       } | Survey ${state.shipStats.surveyData}`;
 
+      setStatusStrip([
+        { label: 'Speed', value: `${engine.getSpeed()}x` },
+        { label: 'State', value: engine.isPaused() ? 'Paused' : 'Running', tone: engine.isPaused() ? 'paused' : undefined },
+        { label: 'Zoom', value: state.camera.zoom.toFixed(2) },
+        { label: 'Credits', value: `${state.company.credits.toFixed(0)}` },
+        {
+          label: 'Location',
+          value: transit
+            ? `Transit → ${state.sector.nodes.find((node) => node.id === transit.toId)?.name ?? transit.toId}`
+            : currentNode?.name ?? state.sectorShip.nodeId
+        }
+      ]);
+
       const availableContracts = state.contracts.contracts.filter(
         (contract) => contract.status === 'Available' && contract.fromNodeId === state.sectorShip.nodeId
       );
@@ -545,6 +601,25 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     },
     setStatusMessage: (value: string) => {
       message.textContent = value;
+      if (!value) {
+        message.classList.remove('is-visible');
+        message.style.display = 'none';
+        return;
+      }
+      message.style.display = 'block';
+      message.classList.add('is-visible');
+      if (toastTimeout) {
+        window.clearTimeout(toastTimeout);
+      }
+      toastTimeout = window.setTimeout(() => {
+        message.classList.remove('is-visible');
+        window.setTimeout(() => {
+          if (!message.classList.contains('is-visible')) {
+            message.style.display = 'none';
+          }
+        }, 250);
+        toastTimeout = null;
+      }, 3200);
     },
     setSectorMapVisible: (visible: boolean) => {
       sectorPanel.style.display = visible ? 'grid' : 'none';

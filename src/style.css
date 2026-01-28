@@ -323,13 +323,56 @@ body {
 
 .mode-indicator {
   font-weight: 600;
-  font-size: 0.9rem;
-  letter-spacing: 0.02em;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(18, 26, 44, 0.85);
+  border: 1px solid rgba(120, 160, 255, 0.35);
+  width: fit-content;
 }
 
 .needs {
   display: grid;
   gap: 6px;
+}
+
+.status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.status-item {
+  font-size: 0.7rem;
+  color: #cfd9f6;
+  background: rgba(14, 20, 36, 0.75);
+  border: 1px solid rgba(120, 160, 255, 0.2);
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.status-item strong {
+  color: #e7efff;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.status-item.is-paused {
+  color: #ffd7d7;
+  background: rgba(60, 20, 24, 0.75);
+  border-color: rgba(255, 130, 130, 0.35);
+}
+
+.camera-hint {
+  font-size: 0.72rem;
+  color: #b6c8ff;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(20, 28, 48, 0.6);
+  border: 1px solid rgba(120, 160, 255, 0.2);
+  width: fit-content;
 }
 
 .need-row {
@@ -358,7 +401,18 @@ body {
 }
 
 .controls-hint {
-  font-size: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: #c3d2ff;
+}
+
+.control-chip {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(16, 24, 40, 0.7);
+  border: 1px solid rgba(120, 160, 255, 0.2);
   color: #c3d2ff;
 }
 
@@ -399,7 +453,20 @@ button:hover {
 
 .message {
   font-size: 0.75rem;
-  color: #9bb1ff;
+  color: #cfe1ff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(16, 24, 40, 0.75);
+  border: 1px solid rgba(120, 160, 255, 0.25);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  width: fit-content;
+}
+
+.message.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 @media (max-width: 980px) {

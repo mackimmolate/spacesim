@@ -8,9 +8,11 @@ import { deserializeSaveState, serializeSaveState } from './sim/save';
 import { createUI } from './ui/ui';
 import { GameMode } from './sim/modes';
 import { hireCandidate, regenerateCandidates } from './sim/crew/hiring';
+import { computeOpsEfficiency } from './sim/crew/crew';
 import { resolveEvent } from './sim/events/events';
 import { startTravel } from './sim/sector/travel';
 import { acceptContract, startContractOperation } from './sim/contracts/contracts';
+import { pushLog } from './sim/log';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) {
@@ -60,6 +62,23 @@ function setDestination(nodeId: string): void {
   setState(startTravel(state, nodeId));
 }
 
+function fireCrewMember(crewId: string): void {
+  const member = state.company.crew.find((crew) => crew.id === crewId);
+  if (!member) {
+    return;
+  }
+  const nextCrew = state.company.crew.filter((crew) => crew.id !== crewId);
+  setState({
+    ...state,
+    company: {
+      ...state.company,
+      crew: nextCrew,
+      opsEfficiency: computeOpsEfficiency(nextCrew)
+    },
+    log: pushLog(state.log, `Released ${member.name} from duty.`)
+  });
+}
+
 const ui = createUI(uiWrapper, {
   onTogglePause: () => inputController.signalTogglePause(),
   onCycleSpeed: () => inputController.signalCycleSpeed(),
@@ -93,6 +112,9 @@ const ui = createUI(uiWrapper, {
   },
   onHireCandidate: (candidateId: string) => {
     setState(hireCandidate(state, candidateId));
+  },
+  onFireCrew: (crewId: string) => {
+    fireCrewMember(crewId);
   },
   onResolveEventChoice: (choiceId: 'A' | 'B') => {
     setState(resolveEvent(state, choiceId));

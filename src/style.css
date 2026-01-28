@@ -128,6 +128,101 @@ body {
   pointer-events: auto;
 }
 
+.quick-panel {
+  position: relative;
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(8, 12, 24, 0.75);
+  border: 1px solid rgba(120, 160, 255, 0.2);
+  border-radius: 12px;
+  backdrop-filter: blur(6px);
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.screen-launch {
+  width: 100%;
+  text-align: left;
+  font-size: 0.8rem;
+}
+
+.screen-root {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.screen-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 6, 14, 0.75);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: auto;
+}
+
+.screen-overlay.is-open {
+  display: flex;
+}
+
+.screen-card {
+  width: min(960px, 92vw);
+  max-height: 88vh;
+  overflow: auto;
+  display: grid;
+  gap: 12px;
+  background: rgba(10, 14, 26, 0.92);
+  border: 1px solid rgba(120, 160, 255, 0.25);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 24px 60px rgba(5, 10, 22, 0.6);
+}
+
+.screen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.screen-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.screen-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.screen-key {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(24, 34, 56, 0.8);
+  border: 1px solid rgba(120, 160, 255, 0.25);
+  color: #cfe1ff;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.screen-close {
+  font-size: 0.75rem;
+  padding: 6px 10px;
+}
+
+.screen-body {
+  display: grid;
+  gap: 12px;
+}
+
 .sector-panel {
   position: relative;
   width: 100%;
@@ -186,7 +281,7 @@ body {
 .panel-section {
   display: grid;
   gap: 8px;
-  padding: 8px;
+  padding: 0;
   border-radius: 10px;
   background: rgba(12, 16, 28, 0.55);
   border: 1px solid rgba(120, 160, 255, 0.15);
@@ -194,6 +289,10 @@ body {
 
 .panel-section.is-collapsed .section-body {
   display: none;
+}
+
+.panel-section.is-collapsed {
+  gap: 0;
 }
 
 .section-toggle {
@@ -205,7 +304,7 @@ body {
   color: #9fb2ec;
   background: transparent;
   border: none;
-  padding: 0;
+  padding: 6px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -226,6 +325,7 @@ body {
 .section-body {
   display: grid;
   gap: 8px;
+  padding: 0 10px 10px;
 }
 
 .ship-stats {
@@ -245,8 +345,30 @@ body {
   align-items: center;
 }
 
-.contract-info {
+.contract-info,
+.contract-entry {
   font-size: 0.75rem;
+}
+
+.contract-entry {
+  text-align: left;
+  width: 100%;
+}
+
+.contract-details {
+  grid-column: 1 / -1;
+  display: none;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(12, 16, 28, 0.6);
+  border: 1px solid rgba(120, 160, 255, 0.2);
+  font-size: 0.75rem;
+  color: #c8d2f3;
+}
+
+.contract-detail-row {
+  color: #c8d2f3;
 }
 
 .contract-empty {
@@ -282,8 +404,31 @@ body {
   gap: 6px;
 }
 
+.crew-row-main {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+}
+
 .crew-entry {
   text-align: left;
+}
+
+.crew-fire {
+  background: rgba(40, 18, 24, 0.6);
+  border: 1px solid rgba(255, 130, 130, 0.3);
+  color: #ffd6d6;
+  font-size: 0.72rem;
+}
+
+.crew-fire.is-confirm {
+  background: rgba(80, 24, 28, 0.85);
+  border-color: rgba(255, 160, 160, 0.6);
+  color: #fff0f0;
+}
+
+.crew-row:not(.is-selected) .crew-fire {
+  display: none;
 }
 
 .crew-inline-details {
@@ -298,7 +443,8 @@ body {
 }
 
 .crew-entry.is-selected,
-.candidate-info.is-selected {
+.candidate-info.is-selected,
+.contract-entry.is-selected {
   background: #2b3f6f;
   border-color: rgba(160, 190, 255, 0.7);
   box-shadow: 0 0 0 1px rgba(160, 190, 255, 0.35);

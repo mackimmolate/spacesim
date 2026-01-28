@@ -1,5 +1,6 @@
 import type { GameState } from '../sim/types';
 import type { SectorNode } from '../sim/sector/types';
+import type { Contract, ActiveOperation } from '../sim/contracts/types';
 import type { Engine } from '../engine/Engine';
 import { GameMode } from '../sim/modes';
 
@@ -14,6 +15,7 @@ export interface UIActions {
   onRegenerateVisuals: () => void;
   onGenerateCandidates: () => void;
   onHireCandidate: (candidateId: string) => void;
+  onFireCrew: (crewId: string) => void;
   onResolveEventChoice: (choiceId: 'A' | 'B') => void;
   onAcceptContract: (contractId: string) => void;
   onStartContractAction: (contractId: string) => void;
@@ -47,11 +49,11 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   container.appendChild(modeBanner);
   container.appendChild(layout);
 
-  const crewPanel = document.createElement('div');
-  crewPanel.className = 'crew-panel';
+  const eventsPanel = document.createElement('div');
+  eventsPanel.className = 'crew-panel events-panel';
 
-  const contractsPanel = document.createElement('div');
-  contractsPanel.className = 'contracts-panel';
+  const quickPanel = document.createElement('div');
+  quickPanel.className = 'quick-panel';
 
   const sectorPanel = document.createElement('div');
   sectorPanel.className = 'sector-panel';
@@ -145,6 +147,47 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     return { section, header, body };
   }
 
+  function createScreen(title: string, hotkey: string) {
+    const overlay = document.createElement('div');
+    overlay.className = 'screen-overlay';
+
+    const card = document.createElement('div');
+    card.className = 'screen-card';
+
+    const header = document.createElement('div');
+    header.className = 'screen-header';
+
+    const titleBlock = document.createElement('div');
+    titleBlock.className = 'screen-title';
+    titleBlock.textContent = title;
+
+    const keyHint = document.createElement('div');
+    keyHint.className = 'screen-key';
+    keyHint.textContent = hotkey;
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'screen-close';
+    close.textContent = 'Close';
+
+    const headerLeft = document.createElement('div');
+    headerLeft.className = 'screen-header-left';
+    headerLeft.appendChild(titleBlock);
+    headerLeft.appendChild(keyHint);
+
+    header.appendChild(headerLeft);
+    header.appendChild(close);
+
+    const body = document.createElement('div');
+    body.className = 'screen-body';
+
+    card.appendChild(header);
+    card.appendChild(body);
+    overlay.appendChild(card);
+
+    return { overlay, body, close };
+  }
+
   overlay.appendChild(statusStrip);
   overlay.appendChild(modeIndicator);
   overlay.appendChild(cameraHint);
@@ -156,73 +199,32 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   overlay.appendChild(buttonRow);
   overlay.appendChild(message);
 
-  const crewHeader = document.createElement('div');
-  crewHeader.className = 'panel-title';
-  crewHeader.textContent = 'Crew';
-
-  const opsEfficiency = document.createElement('div');
-  opsEfficiency.className = 'crew-ops';
-
-  const rosterList = document.createElement('div');
-  rosterList.className = 'crew-roster';
-
-  const generateButton = document.createElement('button');
-  generateButton.type = 'button';
-  generateButton.textContent = 'Generate Candidates';
-  generateButton.addEventListener('click', actions.onGenerateCandidates);
-
-  const candidateList = document.createElement('div');
-  candidateList.className = 'crew-candidates';
-
   const eventPanel = document.createElement('div');
   eventPanel.className = 'crew-event';
+  const eventsHeader = document.createElement('div');
+  eventsHeader.className = 'panel-title';
+  eventsHeader.textContent = 'Events';
 
-  const personnelSection = createSection('Personnel');
-  personnelSection.body.appendChild(opsEfficiency);
-  personnelSection.body.appendChild(rosterList);
+  eventsPanel.appendChild(eventsHeader);
+  eventsPanel.appendChild(eventPanel);
 
-  const candidatesSection = createSection('Candidates');
-  candidatesSection.body.appendChild(generateButton);
-  candidatesSection.body.appendChild(candidateList);
+  const quickHeader = document.createElement('div');
+  quickHeader.className = 'panel-title';
+  quickHeader.textContent = 'Screens';
 
-  const eventsSection = createSection('Events');
-  eventsSection.body.appendChild(eventPanel);
+  const personnelButton = document.createElement('button');
+  personnelButton.type = 'button';
+  personnelButton.className = 'screen-launch';
+  personnelButton.textContent = 'Personnel (P)';
 
-  crewPanel.appendChild(crewHeader);
-  crewPanel.appendChild(personnelSection.section);
-  crewPanel.appendChild(candidatesSection.section);
-  crewPanel.appendChild(eventsSection.section);
+  const contractsButton = document.createElement('button');
+  contractsButton.type = 'button';
+  contractsButton.className = 'screen-launch';
+  contractsButton.textContent = 'Contracts (C)';
 
-  const contractsHeader = document.createElement('div');
-  contractsHeader.className = 'panel-title';
-  contractsHeader.textContent = 'Contracts';
-
-  const shipStats = document.createElement('div');
-  shipStats.className = 'ship-stats';
-
-  const availableList = document.createElement('div');
-  availableList.className = 'contracts-list';
-
-  const activeList = document.createElement('div');
-  activeList.className = 'contracts-list';
-
-  const tracker = document.createElement('div');
-  tracker.className = 'contract-tracker';
-
-  const availableSection = createSection('Available Here');
-  availableSection.body.appendChild(availableList);
-
-  const activeSection = createSection('Active');
-  activeSection.body.appendChild(activeList);
-
-  const trackerSection = createSection('Current Operation');
-  trackerSection.body.appendChild(tracker);
-
-  contractsPanel.appendChild(contractsHeader);
-  contractsPanel.appendChild(shipStats);
-  contractsPanel.appendChild(availableSection.section);
-  contractsPanel.appendChild(activeSection.section);
-  contractsPanel.appendChild(trackerSection.section);
+  quickPanel.appendChild(quickHeader);
+  quickPanel.appendChild(personnelButton);
+  quickPanel.appendChild(contractsButton);
 
   const sectorHeader = document.createElement('div');
   sectorHeader.className = 'sector-header';
@@ -246,11 +248,176 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
 
   leftColumn.appendChild(overlay);
   leftColumn.appendChild(sectorPanel);
-  rightColumn.appendChild(crewPanel);
-  rightColumn.appendChild(contractsPanel);
+  rightColumn.appendChild(eventsPanel);
+  rightColumn.appendChild(quickPanel);
+
+  const screenRoot = document.createElement('div');
+  screenRoot.className = 'screen-root';
+  container.appendChild(screenRoot);
+
+  const opsEfficiency = document.createElement('div');
+  opsEfficiency.className = 'crew-ops';
+
+  const rosterList = document.createElement('div');
+  rosterList.className = 'crew-roster';
+
+  const generateButton = document.createElement('button');
+  generateButton.type = 'button';
+  generateButton.textContent = 'Generate Candidates';
+  generateButton.addEventListener('click', actions.onGenerateCandidates);
+
+  const candidateList = document.createElement('div');
+  candidateList.className = 'crew-candidates';
+
+  const shipStats = document.createElement('div');
+  shipStats.className = 'ship-stats';
+
+  const availableList = document.createElement('div');
+  availableList.className = 'contracts-list';
+
+  const activeList = document.createElement('div');
+  activeList.className = 'contracts-list';
+
+  const tracker = document.createElement('div');
+  tracker.className = 'contract-tracker';
+
+  const personnelScreen = createScreen('Personnel', 'P');
+  const rosterSection = createSection('Roster');
+  rosterSection.body.appendChild(opsEfficiency);
+  rosterSection.body.appendChild(rosterList);
+  const candidatesSection = createSection('Candidates', false);
+  candidatesSection.body.appendChild(generateButton);
+  candidatesSection.body.appendChild(candidateList);
+  personnelScreen.body.appendChild(rosterSection.section);
+  personnelScreen.body.appendChild(candidatesSection.section);
+  screenRoot.appendChild(personnelScreen.overlay);
+
+  const contractsScreen = createScreen('Contracts', 'C');
+  const availableSection = createSection('Available Here');
+  availableSection.body.appendChild(availableList);
+  const activeSection = createSection('Active');
+  activeSection.body.appendChild(activeList);
+  const trackerSection = createSection('Current Operation');
+  trackerSection.body.appendChild(tracker);
+  contractsScreen.body.appendChild(shipStats);
+  contractsScreen.body.appendChild(availableSection.section);
+  contractsScreen.body.appendChild(activeSection.section);
+  contractsScreen.body.appendChild(trackerSection.section);
+  screenRoot.appendChild(contractsScreen.overlay);
+
+  let personnelOpen = false;
+  let contractsOpen = false;
+
+  function closePersonnelScreen() {
+    personnelOpen = false;
+    setScreenOpen(personnelScreen, false);
+  }
+
+  function closeContractsScreen() {
+    contractsOpen = false;
+    setScreenOpen(contractsScreen, false);
+  }
+
+  personnelScreen.close.addEventListener('click', closePersonnelScreen);
+  personnelScreen.overlay.addEventListener('click', (event) => {
+    if (event.target === personnelScreen.overlay) {
+      closePersonnelScreen();
+    }
+  });
+
+  contractsScreen.close.addEventListener('click', closeContractsScreen);
+  contractsScreen.overlay.addEventListener('click', (event) => {
+    if (event.target === contractsScreen.overlay) {
+      closeContractsScreen();
+    }
+  });
+
+  function setScreenOpen(screen: { overlay: HTMLDivElement }, open: boolean) {
+    screen.overlay.classList.toggle('is-open', open);
+  }
+
+  function togglePersonnelScreen() {
+    personnelOpen = !personnelOpen;
+    if (personnelOpen) {
+      contractsOpen = false;
+      setScreenOpen(contractsScreen, false);
+    }
+    setScreenOpen(personnelScreen, personnelOpen);
+  }
+
+  function toggleContractsScreen() {
+    contractsOpen = !contractsOpen;
+    if (contractsOpen) {
+      personnelOpen = false;
+      setScreenOpen(personnelScreen, false);
+    }
+    setScreenOpen(contractsScreen, contractsOpen);
+  }
+
+  personnelButton.addEventListener('click', togglePersonnelScreen);
+  contractsButton.addEventListener('click', toggleContractsScreen);
+
+  function isTypingTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+    return (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable
+    );
+  }
+
+  window.addEventListener(
+    'keydown',
+    (event) => {
+      if (isTypingTarget(event.target)) {
+        return;
+      }
+      if (event.code === 'KeyP') {
+        togglePersonnelScreen();
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+      if (event.code === 'KeyC') {
+        toggleContractsScreen();
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+      if (event.code === 'Escape' && (personnelOpen || contractsOpen)) {
+        closePersonnelScreen();
+        closeContractsScreen();
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    },
+    { capture: true }
+  );
+
+  function clearPendingFire(): void {
+    pendingFireId = null;
+    if (pendingFireTimeout) {
+      window.clearTimeout(pendingFireTimeout);
+      pendingFireTimeout = null;
+    }
+  }
+
+  function armPendingFire(crewId: string): void {
+    pendingFireId = crewId;
+    if (pendingFireTimeout) {
+      window.clearTimeout(pendingFireTimeout);
+    }
+    pendingFireTimeout = window.setTimeout(() => {
+      pendingFireId = null;
+      pendingFireTimeout = null;
+    }, 3200);
+  }
 
   let selectedCrewId: string | null = null;
   let selectedCandidateId: string | null = null;
+  let selectedContractId: string | null = null;
+  let pendingFireId: string | null = null;
+  let pendingFireTimeout: number | null = null;
   let lastCrewKey = '';
   let lastCandidateKey = '';
   let lastEventKey = '';
@@ -421,13 +588,21 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
       modeIndicator.textContent = state.mode === 'Command' ? 'Command Mode' : 'Avatar Mode';
       modeBanner.textContent =
         state.mode === 'Command'
-          ? 'Command Mode — ESC to leave chair'
-          : 'Avatar Mode — Press E at the chair';
+          ? 'Command Mode - ESC to leave chair'
+          : 'Avatar Mode - Press E at the chair';
       modeBanner.style.opacity = '1';
       setControlsHint(
         state.mode === 'Command'
-          ? ['WASD/Arrows: Pan', 'Wheel: Zoom', 'R: Reset View', 'ESC: Exit', 'M: Map']
-          : ['WASD/Arrows: Move', 'E: Interact', 'E: Chair', 'M: Map']
+          ? [
+              'WASD/Arrows: Pan',
+              'Wheel: Zoom',
+              'R: Reset View',
+              'ESC: Exit',
+              'M: Map',
+              'P: Personnel',
+              'C: Contracts'
+            ]
+          : ['WASD/Arrows: Move', 'E: Interact', 'E: Chair', 'M: Map', 'P: Personnel', 'C: Contracts']
       );
 
       const canTravel = state.mode === 'Command';
@@ -440,7 +615,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         Math.abs(state.camera.y) > 0.5 ||
         Math.abs(state.camera.zoom - 1) > 0.01;
       cameraHint.textContent =
-        state.mode === GameMode.Command && cameraOffset ? 'View offset — press R to reset' : '';
+        state.mode === GameMode.Command && cameraOffset ? 'View offset - press R to reset' : '';
       cameraHint.style.display = cameraHint.textContent ? 'block' : 'none';
 
       updateNeedRow(needRows.hunger, state.needs.hunger);
@@ -490,12 +665,16 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
           const row = document.createElement('div');
           row.className = 'crew-row';
 
+          const rowMain = document.createElement('div');
+          rowMain.className = 'crew-row-main';
+
           const button = document.createElement('button');
           button.type = 'button';
           button.className = 'crew-entry';
           button.dataset.crewId = member.id;
           button.textContent = `${member.name} (${member.role}) - ${member.payRate} cr/day`;
           button.addEventListener('click', () => {
+            clearPendingFire();
             const isSelected = selectedCrewId === member.id;
             selectedCrewId = isSelected ? null : member.id;
             if (!isSelected) {
@@ -503,15 +682,36 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
             }
           });
 
+          const fire = document.createElement('button');
+          fire.type = 'button';
+          fire.className = 'crew-fire';
+          fire.textContent = 'Fire';
+          fire.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (pendingFireId === member.id) {
+              clearPendingFire();
+              actions.onFireCrew(member.id);
+              return;
+            }
+            selectedCrewId = member.id;
+            selectedCandidateId = null;
+            armPendingFire(member.id);
+          });
+
           const details = document.createElement('div');
           details.className = 'crew-inline-details';
 
-          row.appendChild(button);
+          rowMain.appendChild(button);
+          rowMain.appendChild(fire);
+          row.appendChild(rowMain);
           row.appendChild(details);
           rosterList.appendChild(row);
         });
         if (selectedCrewId && !state.company.crew.some((member) => member.id === selectedCrewId)) {
           selectedCrewId = null;
+        }
+        if (pendingFireId && !state.company.crew.some((member) => member.id === pendingFireId)) {
+          clearPendingFire();
         }
         lastCrewKey = crewKey;
       }
@@ -522,6 +722,13 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         const details = row?.querySelector<HTMLDivElement>('.crew-inline-details');
         const isSelected = crewId === selectedCrewId;
         button.classList.toggle('is-selected', isSelected);
+        row?.classList.toggle('is-selected', isSelected);
+        const fireButton = row?.querySelector<HTMLButtonElement>('.crew-fire');
+        if (fireButton) {
+          const isPending = crewId === pendingFireId;
+          fireButton.textContent = isPending ? 'Confirm' : 'Fire';
+          fireButton.classList.toggle('is-confirm', isPending);
+        }
         if (!details) {
           return;
         }
@@ -578,6 +785,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
             info.dataset.candidateId = candidate.id;
             info.textContent = `${candidate.name} (${candidate.role}) - bonus ${candidate.signOnBonus} cr`;
             info.addEventListener('click', () => {
+              clearPendingFire();
               const isSelected = selectedCandidateId === candidate.id;
               selectedCandidateId = isSelected ? null : candidate.id;
               if (!isSelected) {
@@ -702,7 +910,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         {
           label: 'Location',
           value: transit
-            ? `Transit → ${state.sector.nodes.find((node) => node.id === transit.toId)?.name ?? transit.toId}`
+            ? `Transit -> ${state.sector.nodes.find((node) => node.id === transit.toId)?.name ?? transit.toId}`
             : currentNode?.name ?? state.sectorShip.nodeId
         }
       ]);
@@ -719,15 +927,27 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         availableContracts.forEach((contract) => {
           const row = document.createElement('div');
           row.className = 'contract-row';
-          const label = document.createElement('div');
-          label.className = 'contract-info';
+          const label = document.createElement('button');
+          label.type = 'button';
+          label.className = 'contract-entry';
+          label.dataset.contractId = contract.id;
           label.textContent = `${contract.type} - ${contract.rewardCredits} cr`;
+          label.addEventListener('click', () => {
+            const isSelected = selectedContractId === contract.id;
+            selectedContractId = isSelected ? null : contract.id;
+          });
           const accept = document.createElement('button');
           accept.type = 'button';
           accept.textContent = 'Accept';
-          accept.addEventListener('click', () => actions.onAcceptContract(contract.id));
+          accept.addEventListener('click', (event) => {
+            event.stopPropagation();
+            actions.onAcceptContract(contract.id);
+          });
+          const details = document.createElement('div');
+          details.className = 'contract-details';
           row.appendChild(label);
           row.appendChild(accept);
+          row.appendChild(details);
           availableList.appendChild(row);
         });
         if (availableContracts.length === 0) {
@@ -748,9 +968,15 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         activeContracts.forEach((contract) => {
           const row = document.createElement('div');
           row.className = 'contract-row';
-          const label = document.createElement('div');
-          label.className = 'contract-info';
+          const label = document.createElement('button');
+          label.type = 'button';
+          label.className = 'contract-entry';
+          label.dataset.contractId = contract.id;
           label.textContent = `${contract.type} (${contract.status})`;
+          label.addEventListener('click', () => {
+            const isSelected = selectedContractId === contract.id;
+            selectedContractId = isSelected ? null : contract.id;
+          });
           row.appendChild(label);
           if (contract.status === 'Accepted') {
             const action = document.createElement('button');
@@ -761,9 +987,15 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
                 : contract.type === 'Salvage'
                   ? 'Salvage'
                   : 'Begin Tow';
-            action.addEventListener('click', () => actions.onStartContractAction(contract.id));
+            action.addEventListener('click', (event) => {
+              event.stopPropagation();
+              actions.onStartContractAction(contract.id);
+            });
             row.appendChild(action);
           }
+          const details = document.createElement('div');
+          details.className = 'contract-details';
+          row.appendChild(details);
           activeList.appendChild(row);
         });
         if (activeContracts.length === 0) {
@@ -774,6 +1006,87 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         }
         lastActiveKey = activeKey;
       }
+
+      const allContracts = [...availableContracts, ...activeContracts];
+      if (selectedContractId && !allContracts.some((contract) => contract.id === selectedContractId)) {
+        selectedContractId = null;
+      }
+      const contractById = new Map(allContracts.map((contract) => [contract.id, contract]));
+      const nodeName = (nodeId: string | undefined) =>
+        nodeId ? state.sector.nodes.find((node) => node.id === nodeId)?.name ?? nodeId : 'Unknown';
+      const renderContractDetails = (contract: Contract, activeOperation: ActiveOperation | null): string => {
+        const lines: string[] = [];
+        const rep = contract.reputationDelta;
+        const repSign = rep > 0 ? '+' : '';
+        lines.push(`<div class="contract-detail-row">Status: ${contract.status}</div>`);
+        lines.push(`<div class="contract-detail-row">Reward: ${contract.rewardCredits} cr</div>`);
+        lines.push(`<div class="contract-detail-row">Rep: ${repSign}${rep}</div>`);
+        lines.push(`<div class="contract-detail-row">From: ${nodeName(contract.fromNodeId)}</div>`);
+        if (contract.toNodeId) {
+          lines.push(`<div class="contract-detail-row">To: ${nodeName(contract.toNodeId)}</div>`);
+        }
+        lines.push(
+          `<div class="contract-detail-row">Target: ${nodeName(contract.payload.targetNodeId)}</div>`
+        );
+        if (typeof contract.deadlineTick === 'number') {
+          lines.push(`<div class="contract-detail-row">Deadline: ${contract.deadlineTick}</div>`);
+        }
+        switch (contract.type) {
+          case 'Tug':
+            lines.push(
+              `<div class="contract-detail-row">Required mass: ${contract.payload.requiredMass}</div>`
+            );
+            break;
+          case 'Salvage':
+            lines.push(
+              `<div class="contract-detail-row">Duration: ${contract.payload.durationTicks} ticks</div>`
+            );
+            break;
+          case 'InstallScanner':
+            lines.push(
+              `<div class="contract-detail-row">Data yield: ${contract.payload.dataYield}</div>`
+            );
+            break;
+          default:
+            break;
+        }
+        if (activeOperation && activeOperation.contractId === contract.id) {
+          lines.push(
+            `<div class="contract-detail-row">Remaining: ${activeOperation.remainingTicks} ticks</div>`
+          );
+        }
+        return lines.join('');
+      };
+
+      const syncContractSelection = (container: HTMLDivElement) => {
+        container.querySelectorAll<HTMLButtonElement>('button.contract-entry').forEach((button) => {
+          const contractId = button.dataset.contractId ?? '';
+          const row = button.closest<HTMLDivElement>('.contract-row');
+          const details = row?.querySelector<HTMLDivElement>('.contract-details');
+          const isSelected = contractId !== '' && contractId === selectedContractId;
+          button.classList.toggle('is-selected', isSelected);
+          row?.classList.toggle('is-selected', isSelected);
+          if (!details) {
+            return;
+          }
+          if (isSelected) {
+            const contract = contractById.get(contractId);
+            if (contract) {
+              details.innerHTML = renderContractDetails(contract, state.contracts.activeOperation);
+              details.style.display = 'grid';
+            } else {
+              details.textContent = '';
+              details.style.display = 'none';
+            }
+          } else {
+            details.textContent = '';
+            details.style.display = 'none';
+          }
+        });
+      };
+
+      syncContractSelection(availableList);
+      syncContractSelection(activeList);
 
       tracker.textContent = '';
       if (activeContracts.length > 0) {

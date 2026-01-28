@@ -308,12 +308,13 @@ export class SpaceScene {
   }
 
   private createShipMesh(): THREE.Mesh<THREE.ShapeGeometry, THREE.MeshBasicMaterial> {
+    const sizeScale = 1 / this.baseScale;
     const shape = new THREE.Shape();
-    shape.moveTo(0, -10);
-    shape.lineTo(6, 8);
-    shape.lineTo(0, 4);
-    shape.lineTo(-6, 8);
-    shape.lineTo(0, -10);
+    shape.moveTo(0 * sizeScale, -10 * sizeScale);
+    shape.lineTo(6 * sizeScale, 8 * sizeScale);
+    shape.lineTo(0 * sizeScale, 4 * sizeScale);
+    shape.lineTo(-6 * sizeScale, 8 * sizeScale);
+    shape.lineTo(0 * sizeScale, -10 * sizeScale);
     const geometry = new THREE.ShapeGeometry(shape);
     const material = new THREE.MeshBasicMaterial({ color: 0xffcc66 });
     material.side = THREE.DoubleSide;

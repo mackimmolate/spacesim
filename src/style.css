@@ -177,16 +177,55 @@ body {
   transform: translateY(-100%);
 }
 
-.contracts-header {
+.panel-title {
   font-weight: 700;
   font-size: 0.95rem;
+  letter-spacing: 0.02em;
 }
 
-.contracts-subhead {
+.panel-section {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(12, 16, 28, 0.55);
+  border: 1px solid rgba(120, 160, 255, 0.15);
+}
+
+.panel-section.is-collapsed .section-body {
+  display: none;
+}
+
+.section-toggle {
+  width: 100%;
+  text-align: left;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #9fb2ec;
+  background: transparent;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.section-toggle::after {
+  content: '▾';
+  font-size: 0.8rem;
+  color: #a7b9f5;
+  transition: transform 0.2s ease;
+}
+
+.panel-section.is-collapsed .section-toggle::after {
+  transform: rotate(-90deg);
+}
+
+.section-body {
+  display: grid;
+  gap: 8px;
 }
 
 .ship-stats {
@@ -227,11 +266,6 @@ body {
   background: rgba(18, 24, 40, 0.6);
 }
 
-.crew-header {
-  font-weight: 700;
-  font-size: 1rem;
-}
-
 .crew-ops {
   font-size: 0.8rem;
   color: #c8d8ff;
@@ -243,8 +277,24 @@ body {
   gap: 6px;
 }
 
+.crew-row {
+  display: grid;
+  gap: 6px;
+}
+
 .crew-entry {
   text-align: left;
+}
+
+.crew-inline-details {
+  display: none;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(12, 16, 28, 0.6);
+  border: 1px solid rgba(120, 160, 255, 0.2);
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #c8d2f3;
 }
 
 .crew-entry.is-selected,
@@ -283,12 +333,28 @@ body {
 
 .candidate-row {
   display: grid;
+  gap: 6px;
+}
+
+.candidate-main {
+  display: grid;
   grid-template-columns: 1fr auto;
   gap: 6px;
 }
 
 .candidate-info {
   text-align: left;
+}
+
+.candidate-details {
+  display: none;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(12, 16, 28, 0.6);
+  border: 1px solid rgba(120, 160, 255, 0.2);
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #c8d2f3;
 }
 
 .candidate-empty {

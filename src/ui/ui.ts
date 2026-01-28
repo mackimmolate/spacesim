@@ -122,6 +122,29 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   message.className = 'message';
   message.style.display = 'none';
 
+  function createSection(title: string, open = true) {
+    const section = document.createElement('div');
+    section.className = 'panel-section';
+    if (!open) {
+      section.classList.add('is-collapsed');
+    }
+
+    const header = document.createElement('button');
+    header.type = 'button';
+    header.className = 'section-toggle';
+    header.textContent = title;
+    header.addEventListener('click', () => {
+      section.classList.toggle('is-collapsed');
+    });
+
+    const body = document.createElement('div');
+    body.className = 'section-body';
+
+    section.appendChild(header);
+    section.appendChild(body);
+    return { section, header, body };
+  }
+
   overlay.appendChild(statusStrip);
   overlay.appendChild(modeIndicator);
   overlay.appendChild(cameraHint);
@@ -134,7 +157,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   overlay.appendChild(message);
 
   const crewHeader = document.createElement('div');
-  crewHeader.className = 'crew-header';
+  crewHeader.className = 'panel-title';
   crewHeader.textContent = 'Crew';
 
   const opsEfficiency = document.createElement('div');
@@ -142,13 +165,6 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
 
   const rosterList = document.createElement('div');
   rosterList.className = 'crew-roster';
-
-  const crewDetails = document.createElement('div');
-  crewDetails.className = 'crew-details';
-
-  const candidateHeader = document.createElement('div');
-  candidateHeader.className = 'crew-subhead';
-  candidateHeader.textContent = 'Candidates';
 
   const generateButton = document.createElement('button');
   generateButton.type = 'button';
@@ -161,32 +177,31 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const eventPanel = document.createElement('div');
   eventPanel.className = 'crew-event';
 
+  const personnelSection = createSection('Personnel');
+  personnelSection.body.appendChild(opsEfficiency);
+  personnelSection.body.appendChild(rosterList);
+
+  const candidatesSection = createSection('Candidates');
+  candidatesSection.body.appendChild(generateButton);
+  candidatesSection.body.appendChild(candidateList);
+
+  const eventsSection = createSection('Events');
+  eventsSection.body.appendChild(eventPanel);
+
   crewPanel.appendChild(crewHeader);
-  crewPanel.appendChild(opsEfficiency);
-  crewPanel.appendChild(rosterList);
-  crewPanel.appendChild(crewDetails);
-  crewPanel.appendChild(candidateHeader);
-  crewPanel.appendChild(generateButton);
-  crewPanel.appendChild(candidateList);
-  crewPanel.appendChild(eventPanel);
+  crewPanel.appendChild(personnelSection.section);
+  crewPanel.appendChild(candidatesSection.section);
+  crewPanel.appendChild(eventsSection.section);
 
   const contractsHeader = document.createElement('div');
-  contractsHeader.className = 'contracts-header';
+  contractsHeader.className = 'panel-title';
   contractsHeader.textContent = 'Contracts';
 
   const shipStats = document.createElement('div');
   shipStats.className = 'ship-stats';
 
-  const availableHeader = document.createElement('div');
-  availableHeader.className = 'contracts-subhead';
-  availableHeader.textContent = 'Available Here';
-
   const availableList = document.createElement('div');
   availableList.className = 'contracts-list';
-
-  const activeHeader = document.createElement('div');
-  activeHeader.className = 'contracts-subhead';
-  activeHeader.textContent = 'Active';
 
   const activeList = document.createElement('div');
   activeList.className = 'contracts-list';
@@ -194,13 +209,20 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const tracker = document.createElement('div');
   tracker.className = 'contract-tracker';
 
+  const availableSection = createSection('Available Here');
+  availableSection.body.appendChild(availableList);
+
+  const activeSection = createSection('Active');
+  activeSection.body.appendChild(activeList);
+
+  const trackerSection = createSection('Current Operation');
+  trackerSection.body.appendChild(tracker);
+
   contractsPanel.appendChild(contractsHeader);
   contractsPanel.appendChild(shipStats);
-  contractsPanel.appendChild(availableHeader);
-  contractsPanel.appendChild(availableList);
-  contractsPanel.appendChild(activeHeader);
-  contractsPanel.appendChild(activeList);
-  contractsPanel.appendChild(tracker);
+  contractsPanel.appendChild(availableSection.section);
+  contractsPanel.appendChild(activeSection.section);
+  contractsPanel.appendChild(trackerSection.section);
 
   const sectorHeader = document.createElement('div');
   sectorHeader.className = 'sector-header';
@@ -465,6 +487,9 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
       if (crewKey !== lastCrewKey) {
         rosterList.innerHTML = '';
         state.company.crew.forEach((member) => {
+          const row = document.createElement('div');
+          row.className = 'crew-row';
+
           const button = document.createElement('button');
           button.type = 'button';
           button.className = 'crew-entry';
@@ -475,19 +500,58 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
             selectedCrewId = isSelected ? null : member.id;
             if (!isSelected) {
               selectedCandidateId = null;
-              crewDetails.scrollTo({ top: 0 });
-              crewDetails.textContent = '';
             }
           });
-          rosterList.appendChild(button);
+
+          const details = document.createElement('div');
+          details.className = 'crew-inline-details';
+
+          row.appendChild(button);
+          row.appendChild(details);
+          rosterList.appendChild(row);
         });
         if (selectedCrewId && !state.company.crew.some((member) => member.id === selectedCrewId)) {
           selectedCrewId = null;
         }
         lastCrewKey = crewKey;
       }
+      const crewById = new Map(state.company.crew.map((member) => [member.id, member]));
       rosterList.querySelectorAll<HTMLButtonElement>('button.crew-entry').forEach((button) => {
-        button.classList.toggle('is-selected', button.dataset.crewId === selectedCrewId);
+        const crewId = button.dataset.crewId ?? '';
+        const row = button.closest<HTMLDivElement>('.crew-row');
+        const details = row?.querySelector<HTMLDivElement>('.crew-inline-details');
+        const isSelected = crewId === selectedCrewId;
+        button.classList.toggle('is-selected', isSelected);
+        if (!details) {
+          return;
+        }
+        if (isSelected) {
+          const member = crewById.get(crewId);
+          if (member) {
+            details.innerHTML = `
+              <div class="crew-detail-title">${member.name} - ${member.role}</div>
+              <div class="crew-detail-needs">Morale ${member.needs.morale.toFixed(
+                0
+              )} | Stress ${member.needs.stress.toFixed(0)} | Fatigue ${member.needs.fatigue.toFixed(
+                0
+              )} | Loyalty ${member.needs.loyalty.toFixed(0)}</div>
+              <div class="crew-detail-traits">Traits: ${member.traits.join(', ') || 'None'}</div>
+              <div class="crew-detail-summary">${member.background.summary}</div>
+              ${
+                member.background.contacts.length > 0
+                  ? `<div class="crew-detail-contact">Contact: ${member.background.contacts[0].name} (${member.background.contacts[0].relationship}) - ${member.background.contacts[0].hook}</div>`
+                  : ''
+              }
+            `;
+            details.style.display = 'grid';
+          } else {
+            details.textContent = '';
+            details.style.display = 'none';
+          }
+        } else {
+          details.textContent = '';
+          details.style.display = 'none';
+        }
       });
 
       const candidateKey = state.company.candidates
@@ -504,6 +568,9 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
           state.company.candidates.forEach((candidate) => {
             const row = document.createElement('div');
             row.className = 'candidate-row';
+
+            const mainRow = document.createElement('div');
+            mainRow.className = 'candidate-main';
 
             const info = document.createElement('button');
             info.type = 'button';
@@ -524,8 +591,13 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
             hire.textContent = 'Hire';
             hire.addEventListener('click', () => actions.onHireCandidate(candidate.id));
 
-            row.appendChild(info);
-            row.appendChild(hire);
+            const details = document.createElement('div');
+            details.className = 'candidate-details';
+
+            mainRow.appendChild(info);
+            mainRow.appendChild(hire);
+            row.appendChild(mainRow);
+            row.appendChild(details);
             candidateList.appendChild(row);
           });
         }
@@ -537,47 +609,44 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         }
         lastCandidateKey = candidateKey;
       }
+      const candidateById = new Map(state.company.candidates.map((candidate) => [candidate.id, candidate]));
       candidateList.querySelectorAll<HTMLButtonElement>('button.candidate-info').forEach((button) => {
-        button.classList.toggle('is-selected', button.dataset.candidateId === selectedCandidateId);
-      });
-
-      const selectedCrew = state.company.crew.find((member) => member.id === selectedCrewId);
-      const selectedCandidate = state.company.candidates.find(
-        (candidate) => candidate.id === selectedCandidateId
-      );
-      crewDetails.innerHTML = '';
-      const detailTarget = selectedCrew ?? selectedCandidate;
-      if (detailTarget) {
-        const header = document.createElement('div');
-        header.className = 'crew-detail-title';
-        header.textContent = `${detailTarget.name} - ${detailTarget.role}`;
-
-        const traits = document.createElement('div');
-        traits.className = 'crew-detail-traits';
-        traits.textContent = `Traits: ${detailTarget.traits.join(', ') || 'None'}`;
-
-        const needs = document.createElement('div');
-        needs.className = 'crew-detail-needs';
-        needs.textContent = `Morale ${detailTarget.needs.morale.toFixed(0)} | Stress ${detailTarget.needs.stress.toFixed(
-          0
-        )} | Fatigue ${detailTarget.needs.fatigue.toFixed(0)} | Loyalty ${detailTarget.needs.loyalty.toFixed(0)}`;
-
-        const summary = document.createElement('div');
-        summary.className = 'crew-detail-summary';
-        summary.textContent = detailTarget.background.summary;
-
-        crewDetails.appendChild(header);
-        crewDetails.appendChild(needs);
-        crewDetails.appendChild(traits);
-        crewDetails.appendChild(summary);
-        if (detailTarget.background.contacts.length > 0) {
-          const contact = detailTarget.background.contacts[0];
-          const contactLine = document.createElement('div');
-          contactLine.className = 'crew-detail-contact';
-          contactLine.textContent = `Contact: ${contact.name} (${contact.relationship}) - ${contact.hook}`;
-          crewDetails.appendChild(contactLine);
+        const candidateId = button.dataset.candidateId ?? '';
+        const row = button.closest<HTMLDivElement>('.candidate-row');
+        const details = row?.querySelector<HTMLDivElement>('.candidate-details');
+        const isSelected = candidateId === selectedCandidateId;
+        button.classList.toggle('is-selected', isSelected);
+        if (!details) {
+          return;
         }
-      }
+        if (isSelected) {
+          const candidate = candidateById.get(candidateId);
+          if (candidate) {
+            details.innerHTML = `
+              <div class="crew-detail-title">${candidate.name} - ${candidate.role}</div>
+              <div class="crew-detail-needs">Morale ${candidate.needs.morale.toFixed(
+                0
+              )} | Stress ${candidate.needs.stress.toFixed(0)} | Fatigue ${candidate.needs.fatigue.toFixed(
+                0
+              )} | Loyalty ${candidate.needs.loyalty.toFixed(0)}</div>
+              <div class="crew-detail-traits">Traits: ${candidate.traits.join(', ') || 'None'}</div>
+              <div class="crew-detail-summary">${candidate.background.summary}</div>
+              ${
+                candidate.background.contacts.length > 0
+                  ? `<div class="crew-detail-contact">Contact: ${candidate.background.contacts[0].name} (${candidate.background.contacts[0].relationship}) - ${candidate.background.contacts[0].hook}</div>`
+                  : ''
+              }
+            `;
+            details.style.display = 'grid';
+          } else {
+            details.textContent = '';
+            details.style.display = 'none';
+          }
+        } else {
+          details.textContent = '';
+          details.style.display = 'none';
+        }
+      });
 
       const eventKey = state.company.pendingEvent
         ? `${state.company.pendingEvent.id}:${state.company.pendingEvent.choices

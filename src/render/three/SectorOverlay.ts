@@ -71,27 +71,33 @@ export class SectorOverlay {
       field: new THREE.MeshBasicMaterial({ color: FIELD_COLOR })
     };
     Object.values(this.nodeMaterials).forEach((material) => {
+      material.side = THREE.DoubleSide;
       material.depthTest = false;
       material.depthWrite = false;
     });
 
     this.routeMaterial = new THREE.MeshBasicMaterial({ color: ROUTE_COLOR, transparent: true, opacity: 0.8 });
+    this.routeMaterial.side = THREE.DoubleSide;
     this.routeMaterial.depthTest = false;
     this.routeMaterial.depthWrite = false;
 
     this.shipMaterial = new THREE.MeshBasicMaterial({ color: SHIP_COLOR });
+    this.shipMaterial.side = THREE.DoubleSide;
     this.shipMaterial.depthTest = false;
     this.shipMaterial.depthWrite = false;
 
     this.destMaterial = new THREE.MeshBasicMaterial({ color: DEST_COLOR, transparent: true, opacity: 0.9 });
+    this.destMaterial.side = THREE.DoubleSide;
     this.destMaterial.depthTest = false;
     this.destMaterial.depthWrite = false;
 
     this.selectMaterial = new THREE.MeshBasicMaterial({ color: SELECT_COLOR, transparent: true, opacity: 0.9 });
+    this.selectMaterial.side = THREE.DoubleSide;
     this.selectMaterial.depthTest = false;
     this.selectMaterial.depthWrite = false;
 
     this.hoverMaterial = new THREE.MeshBasicMaterial({ color: HOVER_COLOR, transparent: true, opacity: 0.85 });
+    this.hoverMaterial.side = THREE.DoubleSide;
     this.hoverMaterial.depthTest = false;
     this.hoverMaterial.depthWrite = false;
 
@@ -191,6 +197,7 @@ export class SectorOverlay {
     const shape = createRoundedRectShape(width, height, 10);
     const geometry = new THREE.ShapeGeometry(shape);
     const fillMaterial = new THREE.MeshBasicMaterial({ color: FRAME_BG, transparent: true, opacity: 0.78 });
+    fillMaterial.side = THREE.DoubleSide;
     fillMaterial.depthTest = false;
     fillMaterial.depthWrite = false;
     const fillMesh = new THREE.Mesh(geometry, fillMaterial);

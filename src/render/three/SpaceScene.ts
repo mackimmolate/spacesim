@@ -189,6 +189,7 @@ export class SpaceScene {
       map: texture,
       transparent: true
     });
+    material.side = THREE.DoubleSide;
     material.depthTest = false;
     material.depthWrite = false;
 
@@ -207,6 +208,7 @@ export class SpaceScene {
       map: texture,
       transparent: true
     });
+    material.side = THREE.DoubleSide;
     material.depthTest = false;
     material.depthWrite = false;
 
@@ -314,6 +316,7 @@ export class SpaceScene {
     shape.lineTo(0, -10);
     const geometry = new THREE.ShapeGeometry(shape);
     const material = new THREE.MeshBasicMaterial({ color: 0xffcc66 });
+    material.side = THREE.DoubleSide;
     material.depthTest = false;
     material.depthWrite = false;
     const mesh = new THREE.Mesh(geometry, material);

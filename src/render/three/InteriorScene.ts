@@ -48,6 +48,8 @@ export class InteriorScene {
 
     this.floorMaterial = new THREE.MeshBasicMaterial({ color: TILE_COLORS.floor });
     this.wallMaterial = new THREE.MeshBasicMaterial({ color: TILE_COLORS.wall });
+    this.floorMaterial.side = THREE.DoubleSide;
+    this.wallMaterial.side = THREE.DoubleSide;
     this.floorMaterial.depthTest = false;
     this.floorMaterial.depthWrite = false;
     this.wallMaterial.depthTest = false;
@@ -60,11 +62,15 @@ export class InteriorScene {
       water: new THREE.MeshBasicMaterial({ color: OBJECT_COLORS.water })
     };
     Object.values(this.objectMaterials).forEach((material) => {
+      material.side = THREE.DoubleSide;
+    });
+    Object.values(this.objectMaterials).forEach((material) => {
       material.depthTest = false;
       material.depthWrite = false;
     });
 
     this.playerMaterial = new THREE.MeshBasicMaterial({ color: 0xffd36b });
+    this.playerMaterial.side = THREE.DoubleSide;
     this.playerMaterial.depthTest = false;
     this.playerMaterial.depthWrite = false;
 

@@ -313,8 +313,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     }
     if (hoveredSectorId !== node.id) {
       hoveredSectorId = node.id;
-      sectorTooltip.textContent =
-        lastState.sector.nodes.find((entry) => entry.id === node.id)?.name ?? node.id;
+      sectorTooltip.textContent = node.name ?? node.id;
     }
     const offset = 12;
     const left = Math.min(rect.width - 10, Math.max(10, localX + offset));

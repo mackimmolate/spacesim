@@ -115,7 +115,7 @@ export class ThreeRenderer {
   private handleResize(): void {
     const width = Math.max(1, this.container.clientWidth);
     const height = Math.max(1, this.container.clientHeight);
-    this.renderer.setSize(width, height, false);
+    this.renderer.setSize(width, height, true);
   }
 
   private getSectorViewport(): { x: number; y: number; width: number; height: number } | null {

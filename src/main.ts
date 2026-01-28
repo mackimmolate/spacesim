@@ -1,7 +1,7 @@
 import './style.css';
 import { Engine } from './engine/Engine';
 import { createInputController } from './input/input';
-import { Renderer } from './render/Renderer';
+import { ThreeRenderer } from './render/ThreeRenderer';
 import { createInitialState } from './sim/state';
 import { advanceState } from './sim/tick';
 import { deserializeSaveState, serializeSaveState } from './sim/save';
@@ -27,7 +27,7 @@ app.appendChild(uiWrapper);
 
 const engine = new Engine(60);
 const inputController = createInputController();
-const renderer = new Renderer(canvasWrapper);
+const renderer = new ThreeRenderer(canvasWrapper);
 
 const storageKey = 'spacesim-save';
 

@@ -18,10 +18,11 @@
     "clean": "rm -rf dist node_modules/.vite"
   },
   "dependencies": {
-    "pixi.js": "^7.3.4"
+    "three": "^0.160.0"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
+    "@types/three": "^0.160.0",
     "typescript": "^5.4.5",
     "vite": "^5.4.8",
     "vitest": "^1.6.0"
@@ -36,6 +37,6 @@
     "space",
     "deterministic",
     "typescript",
-    "pixijs"
+    "threejs"
   ]
 }

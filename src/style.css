@@ -148,6 +148,9 @@ body {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #9fb2ec;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .sector-viewport {
@@ -158,6 +161,20 @@ body {
 .sector-hint {
   font-size: 0.7rem;
   color: #9fb2ec;
+}
+
+.sector-tooltip {
+  position: absolute;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(12, 18, 32, 0.92);
+  border: 1px solid rgba(120, 160, 255, 0.25);
+  color: #e2ebff;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(6, 12, 24, 0.45);
+  transform: translateY(-100%);
 }
 
 .contracts-header {
@@ -416,14 +433,84 @@ body {
   color: #c3d2ff;
 }
 
-.log {
+.log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.log-title {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9fb2ec;
+}
+
+.log-toggle {
+  font-size: 0.72rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(18, 26, 44, 0.7);
+  border: 1px solid rgba(120, 160, 255, 0.25);
+  color: #cfe1ff;
+}
+
+.log-toggle:hover {
+  background: rgba(28, 40, 68, 0.7);
+}
+
+.log-toasts {
+  display: grid;
+  gap: 6px;
+  min-height: 18px;
+}
+
+.log-toast {
+  font-size: 0.72rem;
+  color: #cfe1ff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(16, 24, 40, 0.75);
+  border: 1px solid rgba(120, 160, 255, 0.18);
+  box-shadow: 0 6px 18px rgba(6, 12, 24, 0.35);
+  animation: log-in 180ms ease-out;
+}
+
+.log-toast.is-expiring {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.log-panel {
+  display: none;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(12, 16, 28, 0.75);
+  border: 1px solid rgba(120, 160, 255, 0.2);
+}
+
+.log-panel.is-open {
+  display: block;
+}
+
+.log-list {
   display: grid;
   gap: 4px;
   font-size: 0.72rem;
   color: #a7b5e8;
-  max-height: 160px;
-  overflow: auto;
-  padding-right: 4px;
+}
+
+@keyframes log-in {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .status {

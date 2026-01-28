@@ -70,11 +70,30 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const controlsHint = document.createElement('div');
   controlsHint.className = 'controls-hint';
 
-  const logContainer = document.createElement('div');
-  logContainer.className = 'log';
+  const logHeader = document.createElement('div');
+  logHeader.className = 'log-header';
 
-  const status = document.createElement('div');
-  status.className = 'status';
+  const logTitle = document.createElement('div');
+  logTitle.className = 'log-title';
+  logTitle.textContent = 'Recent Events';
+
+  const logToggle = document.createElement('button');
+  logToggle.type = 'button';
+  logToggle.className = 'log-toggle';
+  logToggle.textContent = 'View Log';
+
+  logHeader.appendChild(logTitle);
+  logHeader.appendChild(logToggle);
+
+  const logContainer = document.createElement('div');
+  logContainer.className = 'log-toasts';
+
+  const logPanel = document.createElement('div');
+  logPanel.className = 'log-panel';
+
+  const logList = document.createElement('div');
+  logList.className = 'log-list';
+  logPanel.appendChild(logList);
 
   const buttonRow = document.createElement('div');
   buttonRow.className = 'button-row';
@@ -103,12 +122,13 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   message.style.display = 'none';
 
   overlay.appendChild(statusStrip);
-  overlay.appendChild(status);
   overlay.appendChild(modeIndicator);
   overlay.appendChild(cameraHint);
   overlay.appendChild(needsContainer);
   overlay.appendChild(controlsHint);
+  overlay.appendChild(logHeader);
   overlay.appendChild(logContainer);
+  overlay.appendChild(logPanel);
   overlay.appendChild(buttonRow);
   overlay.appendChild(message);
 
@@ -192,9 +212,14 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   sectorHint.className = 'sector-hint';
   sectorHint.textContent = 'Click a node to travel.';
 
+  const sectorTooltip = document.createElement('div');
+  sectorTooltip.className = 'sector-tooltip';
+  sectorTooltip.style.display = 'none';
+
   sectorPanel.appendChild(sectorHeader);
   sectorPanel.appendChild(sectorViewport);
   sectorPanel.appendChild(sectorHint);
+  sectorPanel.appendChild(sectorTooltip);
 
   leftColumn.appendChild(overlay);
   leftColumn.appendChild(sectorPanel);
@@ -209,6 +234,98 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   let lastAvailableKey = '';
   let lastActiveKey = '__init__';
   let toastTimeout: number | null = null;
+  let lastLogLength = 0;
+  let logPanelOpen = false;
+  let sectorMapVisible = true;
+  let currentMode: GameMode | null = null;
+  let lastState: GameState | null = null;
+  let hoveredSectorId: string | null = null;
+
+  logToggle.addEventListener('click', () => {
+    logPanelOpen = !logPanelOpen;
+    logPanel.classList.toggle('is-open', logPanelOpen);
+    logToggle.textContent = logPanelOpen ? 'Hide Log' : 'View Log';
+  });
+
+  const NODE_RADIUS = 4;
+  const PICK_RADIUS = NODE_RADIUS + 6;
+  const FRAME_PADDING = 12;
+
+  function computeMapScale(nodes: { x: number; y: number }[], width: number, height: number) {
+    let maxRadius = 1;
+    nodes.forEach((node) => {
+      const radius = Math.hypot(node.x, node.y);
+      if (radius > maxRadius) {
+        maxRadius = radius;
+      }
+    });
+    const size = Math.min(width, height) - FRAME_PADDING * 2;
+    return size > 0 ? size / (maxRadius * 2) : 1;
+  }
+
+  function pickNode(nodes: { id: string; x: number; y: number }[], x: number, y: number) {
+    let best: { id: string; x: number; y: number } | null = null;
+    let bestDist = Infinity;
+    const radiusSq = PICK_RADIUS * PICK_RADIUS;
+    nodes.forEach((node) => {
+      const dx = node.x - x;
+      const dy = node.y - y;
+      const dist = dx * dx + dy * dy;
+      if (dist <= radiusSq && dist < bestDist) {
+        best = node;
+        bestDist = dist;
+      }
+    });
+    return best;
+  }
+
+  function updateSectorTooltip(event: PointerEvent | null) {
+    if (!event || !lastState || currentMode !== GameMode.Command || !sectorMapVisible) {
+      sectorTooltip.style.display = 'none';
+      hoveredSectorId = null;
+      return;
+    }
+    const rect = sectorViewport.getBoundingClientRect();
+    const panelRect = sectorPanel.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      sectorTooltip.style.display = 'none';
+      hoveredSectorId = null;
+      return;
+    }
+    const localX = event.clientX - rect.left;
+    const localY = event.clientY - rect.top;
+    if (localX < 0 || localY < 0 || localX > rect.width || localY > rect.height) {
+      sectorTooltip.style.display = 'none';
+      hoveredSectorId = null;
+      return;
+    }
+    const mapScale = computeMapScale(lastState.sector.nodes, rect.width, rect.height);
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const worldX = (localX - centerX) / mapScale;
+    const worldY = (localY - centerY) / mapScale;
+    const node = pickNode(lastState.sector.nodes, worldX, worldY);
+    if (!node) {
+      sectorTooltip.style.display = 'none';
+      hoveredSectorId = null;
+      return;
+    }
+    if (hoveredSectorId !== node.id) {
+      hoveredSectorId = node.id;
+      sectorTooltip.textContent =
+        lastState.sector.nodes.find((entry) => entry.id === node.id)?.name ?? node.id;
+    }
+    const offset = 12;
+    const left = Math.min(rect.width - 10, Math.max(10, localX + offset));
+    const top = Math.min(rect.height - 10, Math.max(10, localY - offset));
+    const panelLeft = rect.left - panelRect.left + left;
+    const panelTop = rect.top - panelRect.top + top;
+    sectorTooltip.style.left = `${panelLeft}px`;
+    sectorTooltip.style.top = `${panelTop}px`;
+    sectorTooltip.style.display = 'block';
+  }
+
+  window.addEventListener('pointermove', (event) => updateSectorTooltip(event));
 
   function setControlsHint(tokens: string[]) {
     controlsHint.innerHTML = '';
@@ -277,21 +394,8 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
 
   return {
     update: (state, engine) => {
-      status.innerHTML = `
-        <div><strong>Seed:</strong> ${state.seed}</div>
-        <div><strong>Tick:</strong> ${state.tick}</div>
-        <div><strong>Sim Time:</strong> ${state.time.toFixed(2)}s</div>
-        <div><strong>Credits:</strong> ${state.company.credits.toFixed(0)}</div>
-        <div><strong>Payroll Due:</strong> ${Math.max(
-          0,
-          (state.company.payrollDueTime - state.time) / 3600
-        ).toFixed(2)}h</div>
-        <div><strong>Speed:</strong> ${engine.getSpeed()}x</div>
-        <div><strong>Paused:</strong> ${engine.isPaused() ? 'Yes' : 'No'}</div>
-        <div><strong>Camera:</strong> x=${state.camera.x.toFixed(1)} y=${state.camera.y.toFixed(
-          1
-        )} z=${state.camera.zoom.toFixed(2)}</div>
-      `;
+      lastState = state;
+      currentMode = state.mode;
       modeIndicator.textContent = state.mode === 'Command' ? 'Command Mode' : 'Avatar Mode';
       modeBanner.textContent =
         state.mode === 'Command'
@@ -307,6 +411,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
       const canTravel = state.mode === 'Command';
       sectorPanel.classList.toggle('is-inactive', !canTravel);
       sectorHint.textContent = canTravel ? 'Click a node to travel.' : 'Sit in the command chair to travel.';
+      sectorPanel.style.display = sectorMapVisible && canTravel ? 'grid' : 'none';
 
       const cameraOffset =
         Math.abs(state.camera.x) > 0.5 ||
@@ -322,15 +427,35 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
       updateNeedRow(needRows.stress, state.needs.stress);
       updateNeedRow(needRows.morale, state.needs.morale);
 
-      logContainer.innerHTML = '';
-      state.log
-        .slice()
-        .reverse()
-        .forEach((entry) => {
+      if (state.log.length < lastLogLength) {
+        lastLogLength = 0;
+      }
+      if (state.log.length > lastLogLength) {
+        state.log.slice(lastLogLength).forEach((entry) => {
           const line = document.createElement('div');
+          line.className = 'log-toast';
           line.textContent = entry;
           logContainer.appendChild(line);
+          window.setTimeout(() => {
+            line.classList.add('is-expiring');
+            window.setTimeout(() => {
+              line.remove();
+            }, 600);
+          }, 5200);
         });
+        lastLogLength = state.log.length;
+      }
+      if (logPanelOpen) {
+        logList.innerHTML = '';
+        state.log
+          .slice(-10)
+          .reverse()
+          .forEach((entry) => {
+            const row = document.createElement('div');
+            row.textContent = entry;
+            logList.appendChild(row);
+          });
+      }
 
       opsEfficiency.textContent = `Ops Efficiency: x${state.company.opsEfficiency.toFixed(2)}`;
 
@@ -622,10 +747,15 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
       }, 3200);
     },
     setSectorMapVisible: (visible: boolean) => {
-      sectorPanel.style.display = visible ? 'grid' : 'none';
+      sectorMapVisible = visible;
+      if (currentMode === GameMode.Command && sectorMapVisible) {
+        sectorPanel.style.display = 'grid';
+      } else {
+        sectorPanel.style.display = 'none';
+      }
     },
     getSectorMapRect: () => {
-      if (sectorPanel.style.display === 'none') {
+      if (!sectorMapVisible || currentMode !== GameMode.Command || sectorPanel.style.display === 'none') {
         return null;
       }
       return sectorViewport.getBoundingClientRect();

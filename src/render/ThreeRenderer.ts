@@ -131,7 +131,11 @@ export class ThreeRenderer {
 
   private loadInteriorEnvironment(): void {
     const loader = new RGBELoader();
-    const hdrUrl = new URL('assets/vendor/polyhaven/studio_small_03_1k.hdr', import.meta.env.BASE_URL).toString();
+    const baseUrl = (import.meta as ImportMeta).env?.BASE_URL ?? '/';
+    const resolvedBase = baseUrl.startsWith('http')
+      ? baseUrl
+      : new URL(baseUrl, window.location.origin).toString();
+    const hdrUrl = new URL('assets/vendor/polyhaven/studio_small_03_1k.hdr', resolvedBase).toString();
     loader.load(hdrUrl, (texture: THREE.DataTexture) => {
       const envMap = this.pmremGenerator.fromEquirectangular(texture).texture;
       texture.dispose();

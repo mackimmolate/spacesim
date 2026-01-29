@@ -247,7 +247,11 @@ export class InteriorScene {
   }
 
   private resolveAssetUrl(path: string): string {
-    return new URL(path, import.meta.env.BASE_URL).toString();
+    const baseUrl = (import.meta as ImportMeta).env?.BASE_URL ?? '/';
+    const resolvedBase = baseUrl.startsWith('http')
+      ? baseUrl
+      : new URL(baseUrl, window.location.origin).toString();
+    return new URL(path, resolvedBase).toString();
   }
 
   private extractPrimaryObject(root: THREE.Object3D): THREE.Object3D {

@@ -38,7 +38,7 @@ export class ThreeRenderer {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMappingExposure = 1.35;
     this.renderer.setClearColor(COMMAND_BG, 1);
     this.renderer.autoClear = false;
     this.handleResize();

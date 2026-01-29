@@ -32,7 +32,8 @@ export class InteriorScene {
 
   constructor() {
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.Fog(0x04060c, 18, 48);
+    this.scene.background = new THREE.Color(0x0b111d);
+    this.scene.fog = new THREE.Fog(0x0b111d, 24, 80);
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 200);
     this.camera.up.set(0, 0, -1);
 
@@ -44,37 +45,37 @@ export class InteriorScene {
     this.root.add(this.wallGroup, this.objectGroup, this.commanderGroup);
 
     this.accentMaterial = new THREE.MeshStandardMaterial({
-      color: 0x2b7cff,
-      roughness: 0.35,
+      color: 0x3a8dff,
+      roughness: 0.3,
       metalness: 0.6,
-      emissive: 0x0c2a4a,
-      emissiveIntensity: 0.4
+      emissive: 0x10385f,
+      emissiveIntensity: 0.8
     });
     this.metalMaterial = new THREE.MeshStandardMaterial({
-      color: 0x3b4558,
-      roughness: 0.55,
+      color: 0x4a566d,
+      roughness: 0.5,
       metalness: 0.6
     });
     this.darkMetalMaterial = new THREE.MeshStandardMaterial({
-      color: 0x1a212f,
-      roughness: 0.65,
-      metalness: 0.4
+      color: 0x222a3b,
+      roughness: 0.6,
+      metalness: 0.45
     });
     this.glassMaterial = new THREE.MeshStandardMaterial({
-      color: 0x88c9ff,
-      roughness: 0.15,
-      metalness: 0.1,
+      color: 0x9fd6ff,
+      roughness: 0.12,
+      metalness: 0.08,
       transparent: true,
-      opacity: 0.5,
-      emissive: 0x255a85,
-      emissiveIntensity: 0.6
+      opacity: 0.62,
+      emissive: 0x2f6f9f,
+      emissiveIntensity: 1.1
     });
     this.lightStripMaterial = new THREE.MeshStandardMaterial({
-      color: 0x73cfff,
-      roughness: 0.2,
-      metalness: 0.1,
-      emissive: 0x2b6cff,
-      emissiveIntensity: 1.2
+      color: 0x85d8ff,
+      roughness: 0.18,
+      metalness: 0.08,
+      emissive: 0x3b7dff,
+      emissiveIntensity: 2.0
     });
 
     this.metalMap = this.createMetalMap();
@@ -85,8 +86,8 @@ export class InteriorScene {
     this.applyMaterialTextures();
 
     const floorMaterial = new THREE.MeshStandardMaterial({
-      color: 0x0b0f18,
-      roughness: 0.85,
+      color: 0x141b2a,
+      roughness: 0.8,
       metalness: 0.35
     });
     const floorGeometry = new THREE.PlaneGeometry(WORLD_WIDTH, WORLD_DEPTH);
@@ -147,11 +148,14 @@ export class InteriorScene {
   }
 
   private setupLights(): void {
-    const ambient = new THREE.AmbientLight(0x1a2233, 0.35);
+    const ambient = new THREE.AmbientLight(0x2a374f, 0.6);
     this.scene.add(ambient);
 
-    const keyLight = new THREE.DirectionalLight(0x9cc4ff, 0.65);
-    keyLight.position.set(8, 12, 4);
+    const hemi = new THREE.HemisphereLight(0x7fb2ff, 0x0a0f1a, 0.35);
+    this.scene.add(hemi);
+
+    const keyLight = new THREE.DirectionalLight(0x9cc4ff, 0.9);
+    keyLight.position.set(6, 14, 6);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.set(1024, 1024);
     keyLight.shadow.camera.near = 1;
@@ -162,25 +166,29 @@ export class InteriorScene {
     keyLight.shadow.camera.bottom = -20;
     this.scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(0x2b6cff, 0.25);
-    rimLight.position.set(-10, 8, -6);
+    const rimLight = new THREE.DirectionalLight(0x3a7dff, 0.35);
+    rimLight.position.set(-8, 10, -6);
     this.scene.add(rimLight);
 
-    const warmLight = new THREE.PointLight(0xffc98a, 0.8, 18, 2);
-    warmLight.position.set(0, 3, -2);
+    const fillLight = new THREE.PointLight(0x4e7cff, 0.45, 20, 2);
+    fillLight.position.set(-4, 5.5, 2);
+    this.scene.add(fillLight);
+
+    const warmLight = new THREE.PointLight(0xffc98a, 1.1, 24, 2);
+    warmLight.position.set(0, 3.5, -2);
     this.scene.add(warmLight);
 
-    const consoleGlow = new THREE.PointLight(0x66d0ff, 0.6, 10, 2);
-    consoleGlow.position.set(0, 1.4, -3.6);
+    const consoleGlow = new THREE.PointLight(0x7bd7ff, 1.0, 12, 2);
+    consoleGlow.position.set(0, 1.4, -3.4);
     this.scene.add(consoleGlow);
   }
 
   private buildWalls(): void {
     this.wallGroup.clear();
     const wallMaterial = new THREE.MeshStandardMaterial({
-      color: 0x1b2434,
-      roughness: 0.75,
-      metalness: 0.15
+      color: 0x27344a,
+      roughness: 0.7,
+      metalness: 0.18
     });
     const thickness = 0.5;
     const height = 3.2;

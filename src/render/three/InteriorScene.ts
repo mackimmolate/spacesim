@@ -27,6 +27,8 @@ export class InteriorScene {
   private readonly metalMap: THREE.CanvasTexture;
   private readonly grimeMap: THREE.CanvasTexture;
   private readonly panelGlowMap: THREE.CanvasTexture;
+  private readonly decalMap: THREE.CanvasTexture;
+  private readonly normalMap: THREE.CanvasTexture;
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -78,6 +80,8 @@ export class InteriorScene {
     this.metalMap = this.createMetalMap();
     this.grimeMap = this.createGrimeMap();
     this.panelGlowMap = this.createPanelGlowMap();
+    this.decalMap = this.createDecalMap();
+    this.normalMap = this.createNormalMap();
     this.applyMaterialTextures();
 
     const floorMaterial = new THREE.MeshStandardMaterial({
@@ -138,6 +142,8 @@ export class InteriorScene {
     this.metalMap.dispose();
     this.grimeMap.dispose();
     this.panelGlowMap.dispose();
+    this.decalMap.dispose();
+    this.normalMap.dispose();
   }
 
   private setupLights(): void {
@@ -337,27 +343,36 @@ export class InteriorScene {
   private applyMaterialTextures(): void {
     this.metalMaterial.map = this.metalMap;
     this.metalMaterial.roughnessMap = this.grimeMap;
+    this.metalMaterial.normalMap = this.normalMap;
+    this.metalMaterial.normalScale = new THREE.Vector2(0.6, 0.6);
     this.metalMaterial.needsUpdate = true;
 
     this.darkMetalMaterial.map = this.metalMap;
     this.darkMetalMaterial.roughnessMap = this.grimeMap;
+    this.darkMetalMaterial.normalMap = this.normalMap;
+    this.darkMetalMaterial.normalScale = new THREE.Vector2(0.8, 0.8);
     this.darkMetalMaterial.needsUpdate = true;
 
-    this.accentMaterial.map = this.panelGlowMap;
+    this.accentMaterial.map = this.decalMap;
     this.accentMaterial.roughnessMap = this.grimeMap;
+    this.accentMaterial.normalMap = this.normalMap;
+    this.accentMaterial.normalScale = new THREE.Vector2(0.4, 0.4);
     this.accentMaterial.needsUpdate = true;
 
     this.glassMaterial.map = this.panelGlowMap;
     this.glassMaterial.emissiveMap = this.panelGlowMap;
     this.glassMaterial.roughnessMap = this.grimeMap;
+    this.glassMaterial.normalMap = this.normalMap;
+    this.glassMaterial.normalScale = new THREE.Vector2(0.2, 0.2);
     this.glassMaterial.needsUpdate = true;
 
+    this.lightStripMaterial.map = this.panelGlowMap;
     this.lightStripMaterial.emissiveMap = this.panelGlowMap;
     this.lightStripMaterial.needsUpdate = true;
   }
 
   private createMetalMap(): THREE.CanvasTexture {
-    const size = 256;
+    const size = 512;
     const texture = createCanvasTexture(size, size, (ctx) => {
       ctx.fillStyle = '#1b2333';
       ctx.fillRect(0, 0, size, size);
@@ -385,7 +400,7 @@ export class InteriorScene {
   }
 
   private createGrimeMap(): THREE.CanvasTexture {
-    const size = 256;
+    const size = 512;
     const texture = createCanvasTexture(size, size, (ctx) => {
       ctx.fillStyle = '#7f7f7f';
       ctx.fillRect(0, 0, size, size);
@@ -413,7 +428,7 @@ export class InteriorScene {
   }
 
   private createPanelGlowMap(): THREE.CanvasTexture {
-    const size = 128;
+    const size = 256;
     const texture = createCanvasTexture(size, size, (ctx) => {
       ctx.fillStyle = '#0b1d2f';
       ctx.fillRect(0, 0, size, size);
@@ -435,6 +450,66 @@ export class InteriorScene {
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(1, 1);
+    return texture;
+  }
+
+  private createDecalMap(): THREE.CanvasTexture {
+    const size = 256;
+    const texture = createCanvasTexture(size, size, (ctx) => {
+      ctx.fillStyle = '#1b2333';
+      ctx.fillRect(0, 0, size, size);
+      ctx.strokeStyle = 'rgba(120, 200, 255, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(20, 20, size - 40, size - 40);
+      ctx.strokeStyle = 'rgba(246, 198, 116, 0.5)';
+      ctx.beginPath();
+      ctx.moveTo(32, size - 40);
+      ctx.lineTo(size - 32, size - 40);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(246, 198, 116, 0.7)';
+      ctx.fillRect(32, size - 52, 50, 6);
+      ctx.fillRect(size - 82, size - 52, 50, 6);
+      ctx.fillStyle = 'rgba(120, 200, 255, 0.6)';
+      for (let i = 0; i < 6; i += 1) {
+        const x = 40 + i * 24;
+        ctx.fillRect(x, 36, 10, 4);
+      }
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.fillRect(50, 90, size - 100, 40);
+    });
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1, 1);
+    return texture;
+  }
+
+  private createNormalMap(): THREE.CanvasTexture {
+    const size = 256;
+    const texture = createCanvasTexture(size, size, (ctx) => {
+      ctx.fillStyle = 'rgb(128, 128, 255)';
+      ctx.fillRect(0, 0, size, size);
+      for (let i = 0; i < 900; i += 1) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const nx = 120 + Math.random() * 16;
+        const ny = 120 + Math.random() * 16;
+        ctx.fillStyle = `rgb(${nx}, ${ny}, 255)`;
+        ctx.fillRect(x, y, 1, 1);
+      }
+      ctx.strokeStyle = 'rgba(120, 120, 255, 0.35)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 18; i += 1) {
+        const y = Math.random() * size;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(size, y + Math.random() * 4 - 2);
+        ctx.stroke();
+      }
+    });
+    texture.colorSpace = THREE.NoColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1.5, 1.5);
     return texture;
   }
 }

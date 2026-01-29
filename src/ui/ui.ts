@@ -41,23 +41,26 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const rightColumn = document.createElement('div');
   rightColumn.className = 'ui-column ui-column-right';
 
-  const bottomDock = document.createElement('div');
-  bottomDock.className = 'ui-bottom-dock';
-
   layout.appendChild(leftColumn);
   layout.appendChild(rightColumn);
-  layout.appendChild(bottomDock);
 
   const modeBanner = document.createElement('div');
   modeBanner.className = 'mode-banner';
   container.appendChild(modeBanner);
   container.appendChild(layout);
 
+  const dockRoot = document.createElement('div');
+  dockRoot.className = 'ui-dock';
+  const dockBar = document.createElement('div');
+  dockBar.className = 'dock-bar';
+  const dockTrays = document.createElement('div');
+  dockTrays.className = 'dock-trays';
+  dockRoot.appendChild(dockBar);
+  dockRoot.appendChild(dockTrays);
+  container.appendChild(dockRoot);
+
   const eventsPanel = document.createElement('div');
   eventsPanel.className = 'crew-panel events-panel';
-
-  const quickPanel = document.createElement('div');
-  quickPanel.className = 'quick-panel';
 
   const sectorPanel = document.createElement('div');
   sectorPanel.className = 'sector-panel';
@@ -223,30 +226,6 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   eventsPanel.appendChild(eventHeader);
   eventsPanel.appendChild(eventPanel);
 
-  const quickHeader = document.createElement('div');
-  quickHeader.className = 'panel-title';
-  quickHeader.textContent = 'Screens';
-
-  const personnelButton = document.createElement('button');
-  personnelButton.type = 'button';
-  personnelButton.className = 'screen-launch';
-  personnelButton.textContent = 'Personnel (P)';
-
-  const contractsButton = document.createElement('button');
-  contractsButton.type = 'button';
-  contractsButton.className = 'screen-launch';
-  contractsButton.textContent = 'Contracts (C)';
-
-  const controlsButton = document.createElement('button');
-  controlsButton.type = 'button';
-  controlsButton.className = 'screen-launch';
-  controlsButton.textContent = 'Controls (K)';
-
-  quickPanel.appendChild(quickHeader);
-  quickPanel.appendChild(personnelButton);
-  quickPanel.appendChild(contractsButton);
-  quickPanel.appendChild(controlsButton);
-
   const sectorHeader = document.createElement('div');
   sectorHeader.className = 'sector-header';
   sectorHeader.textContent = 'Sector Map (M)';
@@ -269,8 +248,6 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
 
   leftColumn.appendChild(overlay);
   leftColumn.appendChild(sectorPanel);
-  bottomDock.appendChild(eventsPanel);
-  bottomDock.appendChild(quickPanel);
 
   const screenRoot = document.createElement('div');
   screenRoot.className = 'screen-root';
@@ -302,6 +279,21 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const tracker = document.createElement('div');
   tracker.className = 'contract-tracker';
 
+  const personnelButton = document.createElement('button');
+  personnelButton.type = 'button';
+  personnelButton.className = 'screen-launch dock-action';
+  personnelButton.textContent = 'Open Personnel (P)';
+
+  const contractsButton = document.createElement('button');
+  contractsButton.type = 'button';
+  contractsButton.className = 'screen-launch dock-action';
+  contractsButton.textContent = 'Open Contracts (C)';
+
+  const controlsButton = document.createElement('button');
+  controlsButton.type = 'button';
+  controlsButton.className = 'screen-launch dock-action';
+  controlsButton.textContent = 'Open Controls (K)';
+
   const personnelScreen = createScreen('Personnel', 'P');
   const rosterSection = createSection('Roster');
   rosterSection.body.appendChild(opsEfficiency);
@@ -329,6 +321,76 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const controlsScreen = createScreen('Controls', 'K');
   controlsScreen.body.appendChild(buttonRow);
   screenRoot.appendChild(controlsScreen.overlay);
+
+  const signalTray = document.createElement('div');
+  signalTray.className = 'dock-tray dock-tray-signal is-open';
+  signalTray.appendChild(eventsPanel);
+
+  const personnelTray = document.createElement('div');
+  personnelTray.className = 'dock-tray dock-tray-personnel';
+  const personnelTrayTitle = document.createElement('div');
+  personnelTrayTitle.className = 'dock-tray-title';
+  personnelTrayTitle.textContent = 'Personnel';
+  const personnelTrayHint = document.createElement('div');
+  personnelTrayHint.className = 'dock-tray-hint';
+  personnelTrayHint.textContent = 'Manage crew assignments and roster details.';
+  personnelTray.appendChild(personnelTrayTitle);
+  personnelTray.appendChild(personnelTrayHint);
+  personnelTray.appendChild(personnelButton);
+
+  const contractsTray = document.createElement('div');
+  contractsTray.className = 'dock-tray dock-tray-contracts';
+  const contractsTrayTitle = document.createElement('div');
+  contractsTrayTitle.className = 'dock-tray-title';
+  contractsTrayTitle.textContent = 'Contracts';
+  const contractsTrayHint = document.createElement('div');
+  contractsTrayHint.className = 'dock-tray-hint';
+  contractsTrayHint.textContent = 'Review available work and active operations.';
+  contractsTray.appendChild(contractsTrayTitle);
+  contractsTray.appendChild(contractsTrayHint);
+  contractsTray.appendChild(contractsButton);
+
+  const controlsTray = document.createElement('div');
+  controlsTray.className = 'dock-tray dock-tray-controls';
+  const controlsTrayTitle = document.createElement('div');
+  controlsTrayTitle.className = 'dock-tray-title';
+  controlsTrayTitle.textContent = 'Controls';
+  const controlsTrayHint = document.createElement('div');
+  controlsTrayHint.className = 'dock-tray-hint';
+  controlsTrayHint.textContent = 'Pause, speed, save, and system options.';
+  controlsTray.appendChild(controlsTrayTitle);
+  controlsTray.appendChild(controlsTrayHint);
+  controlsTray.appendChild(controlsButton);
+
+  dockTrays.appendChild(signalTray);
+  dockTrays.appendChild(personnelTray);
+  dockTrays.appendChild(contractsTray);
+  dockTrays.appendChild(controlsTray);
+
+  const personnelTab = document.createElement('button');
+  personnelTab.type = 'button';
+  personnelTab.className = 'dock-tab';
+  personnelTab.textContent = 'Personnel';
+
+  const contractsTab = document.createElement('button');
+  contractsTab.type = 'button';
+  contractsTab.className = 'dock-tab';
+  contractsTab.textContent = 'Contracts';
+
+  const controlsTab = document.createElement('button');
+  controlsTab.type = 'button';
+  controlsTab.className = 'dock-tab';
+  controlsTab.textContent = 'Controls';
+
+  const signalTab = document.createElement('button');
+  signalTab.type = 'button';
+  signalTab.className = 'dock-tab';
+  signalTab.textContent = 'Signal';
+
+  dockBar.appendChild(personnelTab);
+  dockBar.appendChild(contractsTab);
+  dockBar.appendChild(controlsTab);
+  dockBar.appendChild(signalTab);
 
   let personnelOpen = false;
   let contractsOpen = false;
@@ -493,11 +555,65 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const pendingToasts: string[] = [];
   const MAX_TOASTS = 4;
   const TOAST_INTERVAL = 360;
+  let openDockTray: 'personnel' | 'contracts' | 'controls' | null = null;
+  let dockAutoCollapse: number | null = null;
+  const DOCK_COLLAPSE_MS = 6500;
 
   logToggle.addEventListener('click', () => {
     logPanelOpen = !logPanelOpen;
     logPanel.classList.toggle('is-open', logPanelOpen);
     logToggle.textContent = logPanelOpen ? 'Hide Log' : 'View Log';
+  });
+
+  const clearDockAutoCollapse = () => {
+    if (dockAutoCollapse) {
+      window.clearTimeout(dockAutoCollapse);
+      dockAutoCollapse = null;
+    }
+  };
+
+  const scheduleDockAutoCollapse = () => {
+    clearDockAutoCollapse();
+    if (!openDockTray) {
+      return;
+    }
+    dockAutoCollapse = window.setTimeout(() => {
+      openDockTray = null;
+      personnelTray.classList.remove('is-open');
+      contractsTray.classList.remove('is-open');
+      controlsTray.classList.remove('is-open');
+      dockAutoCollapse = null;
+    }, DOCK_COLLAPSE_MS);
+  };
+
+  const setDockTrayOpen = (name: 'personnel' | 'contracts' | 'controls' | null) => {
+    openDockTray = name;
+    personnelTray.classList.toggle('is-open', name === 'personnel');
+    contractsTray.classList.toggle('is-open', name === 'contracts');
+    controlsTray.classList.toggle('is-open', name === 'controls');
+    scheduleDockAutoCollapse();
+  };
+
+  const toggleDockTray = (name: 'personnel' | 'contracts' | 'controls') => {
+    if (openDockTray === name) {
+      setDockTrayOpen(null);
+    } else {
+      setDockTrayOpen(name);
+    }
+  };
+
+  personnelTab.addEventListener('click', () => toggleDockTray('personnel'));
+  contractsTab.addEventListener('click', () => toggleDockTray('contracts'));
+  controlsTab.addEventListener('click', () => toggleDockTray('controls'));
+  signalTab.addEventListener('click', () => {
+    if (!eventToggle.disabled) {
+      toggleEventPanel();
+    }
+  });
+
+  [personnelTray, contractsTray, controlsTray].forEach((tray) => {
+    tray.addEventListener('pointerenter', clearDockAutoCollapse);
+    tray.addEventListener('pointerleave', scheduleDockAutoCollapse);
   });
 
   const toggleEventPanel = () => {
@@ -693,7 +809,6 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     update: (state, engine) => {
       lastState = state;
       currentMode = state.mode;
-      layout.classList.toggle('is-avatar', state.mode === GameMode.Avatar);
       modeIndicator.textContent = state.mode === 'Command' ? 'Command Mode' : 'Avatar Mode';
       modeBanner.textContent =
         state.mode === 'Command'

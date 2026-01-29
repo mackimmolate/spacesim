@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 import type { GameState } from '../sim/types';
 import { GameMode } from '../sim/modes';
 import { SpaceScene } from './three/SpaceScene';
@@ -16,6 +17,8 @@ export class ThreeRenderer {
   private readonly sectorOverlay: SectorOverlay;
   private readonly container: HTMLElement;
   private readonly resizeObserver: ResizeObserver;
+  private readonly pmremGenerator: THREE.PMREMGenerator;
+  private interiorEnvMap: THREE.Texture | null = null;
   private currentSeed = '';
   private lastMode: GameMode | null = null;
   private sectorClickHandler: ((nodeId: string) => void) | null = null;
@@ -32,6 +35,11 @@ export class ThreeRenderer {
     this.renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
     this.renderer.setPixelRatio(window.devicePixelRatio || 1);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.physicallyCorrectLights = true;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.1;
     this.renderer.setClearColor(COMMAND_BG, 1);
     this.renderer.autoClear = false;
     this.handleResize();
@@ -46,12 +54,18 @@ export class ThreeRenderer {
     this.interiorScene = new InteriorScene();
     this.sectorOverlay = new SectorOverlay();
 
+    this.pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+    this.pmremGenerator.compileEquirectangularShader();
+    this.loadInteriorEnvironment();
+
     this.resizeObserver = new ResizeObserver(() => this.handleResize());
     this.resizeObserver.observe(container);
   }
 
   render(state: GameState): void {
     this.lastState = state;
+    this.renderer.domElement.style.imageRendering =
+      state.mode === GameMode.Avatar ? 'auto' : 'pixelated';
     if (state.renderSeed !== this.currentSeed) {
       this.spaceScene.rebuild(state.renderSeed);
       this.currentSeed = state.renderSeed;
@@ -108,8 +122,25 @@ export class ThreeRenderer {
     this.spaceScene.dispose();
     this.interiorScene.dispose();
     this.sectorOverlay.dispose();
+    if (this.interiorEnvMap) {
+      this.interiorEnvMap.dispose();
+    }
+    this.pmremGenerator.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
+  }
+
+  private loadInteriorEnvironment(): void {
+    const loader = new RGBELoader();
+    loader.load('/assets/vendor/polyhaven/studio_small_03_1k.hdr', (texture) => {
+      const envMap = this.pmremGenerator.fromEquirectangular(texture).texture;
+      texture.dispose();
+      if (this.interiorEnvMap) {
+        this.interiorEnvMap.dispose();
+      }
+      this.interiorEnvMap = envMap;
+      this.interiorScene.setEnvironmentMap(envMap);
+    });
   }
 
   private handleResize(): void {

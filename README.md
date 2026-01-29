@@ -75,3 +75,16 @@ https://<username>.github.io/spacesim/
 ## Post-build SPA refresh fix
 
 After every build, `scripts/postbuild.mjs` copies `dist/index.html` to `dist/404.html` so that direct URL refreshes resolve to the SPA entry point.
+
+## Asset credits
+
+The following third-party assets are used under CC-BY licenses. Please keep attribution to the original authors as listed at the source URLs.
+
+* Sci-Fi Chairs Demo — https://sketchfab.com/3d-models/sci-fi-chairs-demo-52f3a90005ba446bb3c95caac255f7cd
+* Sci-Fi Computer Desk Console — https://sketchfab.com/3d-models/sci-fi-computer-desk-console-28c67457f2ef4973a0bbc8b667bb183f
+* Sci-Fi Computer Console — https://sketchfab.com/3d-models/sci-fi-computer-console-05ace13ccbd048eb9c6c55ac3c3d8501
+* Sci-Fi Military Canteen — https://sketchfab.com/3d-models/sci-fi-military-canteen-313dfe4dcaed46b9b4b3ffe173e48abe
+
+Lighting environment:
+
+* Poly Haven HDRI "studio_small_03" — https://polyhaven.com/a/studio_small_03 (CC0)

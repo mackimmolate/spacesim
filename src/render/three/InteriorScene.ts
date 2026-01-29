@@ -108,7 +108,8 @@ export class InteriorScene {
     // Fog helps hide the edges of the map and adds mood
     this.scene.fog = new THREE.Fog(0x05070a, 20, 60);
 
-    this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 200);
+    // DEBUG: Camera Far Clip Check
+    this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 500); // Increased Far Plane
     this.camera.up.set(0, 0, -1);
 
     this.root = new THREE.Group();
@@ -217,6 +218,12 @@ export class InteriorScene {
 
     const playerPos = this.tileToWorld(state.player.x, state.player.y);
     this.player.position.set(playerPos.x, 0.75, playerPos.z);
+
+    // console.log('Render Interior:', {
+    //   cam: this.camera.position,
+    //   player: this.player.position,
+    //   aspect, viewSize
+    // });
   }
 
   setEnvironmentMap(environment: THREE.Texture): void {

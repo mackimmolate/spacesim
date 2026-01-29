@@ -126,29 +126,30 @@ export class InteriorScene {
     this.textures.floor.colorSpace = THREE.SRGBColorSpace;
 
     // --- Material Definitions ---
+    // NOTE: Lowered metalness and roughness to ensure visibility without Environment Map
     this.materials = {
       floor: new THREE.MeshStandardMaterial({
         map: this.textures.floor,
-        roughness: 0.7,
-        metalness: 0.2,
+        roughness: 0.8, // More matte
+        metalness: 0.1, // Less metallic
         color: 0xdddddd
       }),
       wall: new THREE.MeshStandardMaterial({
         color: 0x2a3038,
-        roughness: 0.4,
-        metalness: 0.3,
+        roughness: 0.5,
+        metalness: 0.1, // Less metallic
         normalMap: this.textures.wallNormal,
         normalScale: new THREE.Vector2(0.5, 0.5)
       }),
       metalDark: new THREE.MeshStandardMaterial({
         color: 0x1a1f29,
-        roughness: 0.3,
-        metalness: 0.8
+        roughness: 0.4,
+        metalness: 0.3 // Less metallic
       }),
       metalLight: new THREE.MeshStandardMaterial({
         color: 0x8a9bb0,
-        roughness: 0.25,
-        metalness: 0.7
+        roughness: 0.4,
+        metalness: 0.3 // Less metallic
       }),
       glass: new THREE.MeshPhysicalMaterial({
         color: 0x88ccff,
@@ -231,11 +232,12 @@ export class InteriorScene {
   }
 
   private setupLights(): void {
-    const ambient = new THREE.AmbientLight(0x1a2433, 0.4);
+    // BOOSTED LIGHTS for no-HDR visibility
+    const ambient = new THREE.AmbientLight(0x1a2433, 1.2); // Much brighter ambient
     this.scene.add(ambient);
 
     // Main "Sun" or overhead artificial light
-    const keyLight = new THREE.DirectionalLight(0xfff0dd, 1.2);
+    const keyLight = new THREE.DirectionalLight(0xfff0dd, 1.5);
     keyLight.position.set(10, 20, 5);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.set(2048, 2048); // High res shadows
@@ -246,12 +248,12 @@ export class InteriorScene {
     this.scene.add(keyLight);
 
     // Rim light (Blue) for sci-fi contrast
-    const rimLight = new THREE.DirectionalLight(0x0044ff, 0.6);
+    const rimLight = new THREE.DirectionalLight(0x0044ff, 0.8);
     rimLight.position.set(-10, 10, -10);
     this.scene.add(rimLight);
 
     // Fill light (Teal) from below to light up shadows
-    const fillLight = new THREE.HemisphereLight(0x000000, 0x002244, 0.8);
+    const fillLight = new THREE.HemisphereLight(0x000000, 0x002244, 1.0);
     this.scene.add(fillLight);
   }
 

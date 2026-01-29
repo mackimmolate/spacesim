@@ -112,13 +112,13 @@ export class ThreeRenderer {
     } else {
       // For Interior, use the Composer (Bloom)
       this.interiorScene.render(state, width, height);
-      // We need to update the composer size if it changed, but usually handleResize does it.
-      // However, the composer needs the correct camera for the RenderPass if we swapped scenes,
-      // but here we only use composer for Interior.
 
-      // Update the RenderPass camera/scene just in case (though scene is static)
-      // The camera changes every frame in interiorScene.render due to projection updates
-      (this.composer.passes[0] as RenderPass).camera = this.interiorScene.camera;
+      // Explicitly update RenderPass with current camera state (as it changes in interiorScene.render)
+      // And set the clear color for the pass
+      const renderPass = this.composer.passes[0] as RenderPass;
+      renderPass.camera = this.interiorScene.camera;
+      renderPass.clearColor = new THREE.Color(AVATAR_BG);
+      renderPass.clearAlpha = 1;
 
       this.composer.render();
     }
@@ -155,10 +155,7 @@ export class ThreeRenderer {
   private handleResize(): void {
     const width = Math.max(1, this.container.clientWidth);
     const height = Math.max(1, this.container.clientHeight);
-    this.renderer.setSize(width, height, false); // Update canvas style? No, we set style manually if needed.
-    // Actually setSize(w, h, updateStyle) -> false to prevent messing with CSS if we want full control
-    // But usually true is fine.
-    // IMPORTANT: Update composer size
+    this.renderer.setSize(width, height, false);
     if (this.composer) {
       this.composer.setSize(width, height);
     }

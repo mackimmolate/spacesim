@@ -148,49 +148,28 @@ body {
   inset: var(--ui-padding);
   display: grid;
   grid-template-columns: minmax(260px, 360px) 1fr minmax(320px, 380px);
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: var(--ui-gap);
   pointer-events: none;
   overflow: visible;
 }
 
-.ui-layout.is-avatar {
-  grid-template-columns: minmax(260px, 360px) 1fr 72px;
-}
-
-.ui-layout.is-avatar .ui-column-right {
-  align-items: flex-end;
-  width: 72px;
-  gap: 8px;
-  opacity: 0.72;
-  transition: width 0.25s ease, opacity 0.25s ease;
-}
-
-.ui-layout.is-avatar .ui-column-right > * {
-  width: 72px;
-  transition: width 0.25s ease;
-}
-
-.ui-layout.is-avatar .ui-column-right:hover {
-  width: 320px;
-  opacity: 1;
-}
-
-.ui-layout.is-avatar .ui-column-right:hover > * {
-  width: 320px;
-}
-
-.ui-layout.is-avatar .ui-column-right:not(:hover) .event-panel,
-.ui-layout.is-avatar .ui-column-right:not(:hover) .screen-launch {
+.ui-column-right {
   display: none;
 }
 
-.ui-layout.is-avatar .events-panel {
-  max-height: 64px;
-  padding: 8px;
+.ui-bottom-dock {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(260px, 360px);
+  gap: 12px;
+  align-items: end;
+  pointer-events: none;
 }
 
-.ui-layout.is-avatar .quick-panel {
-  padding: 8px;
+.ui-bottom-dock > * {
+  pointer-events: auto;
 }
 
 .ui-column {
@@ -729,7 +708,15 @@ body {
 }
 
 .events-panel.is-expanded {
-  max-height: 340px;
+  max-height: 320px;
+}
+
+.ui-bottom-dock .events-panel {
+  max-height: 96px;
+}
+
+.ui-bottom-dock .events-panel.is-expanded {
+  max-height: 260px;
 }
 
 .event-header {
@@ -784,6 +771,15 @@ body {
 .events-panel.is-expanded .event-panel {
   max-height: 240px;
   overflow: auto;
+}
+
+.ui-bottom-dock .events-panel:not(.is-expanded) .event-desc,
+.ui-bottom-dock .events-panel:not(.is-expanded) .event-choices {
+  display: none;
+}
+
+.ui-bottom-dock .events-panel .event-title {
+  -webkit-line-clamp: 1;
 }
 
 @keyframes event-pop {
@@ -1087,7 +1083,11 @@ button:focus-visible {
 
   .ui-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .ui-bottom-dock {
+    grid-template-columns: 1fr;
   }
 
   .sector-viewport {

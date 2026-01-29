@@ -41,8 +41,12 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const rightColumn = document.createElement('div');
   rightColumn.className = 'ui-column ui-column-right';
 
+  const bottomDock = document.createElement('div');
+  bottomDock.className = 'ui-bottom-dock';
+
   layout.appendChild(leftColumn);
   layout.appendChild(rightColumn);
+  layout.appendChild(bottomDock);
 
   const modeBanner = document.createElement('div');
   modeBanner.className = 'mode-banner';
@@ -265,8 +269,8 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
 
   leftColumn.appendChild(overlay);
   leftColumn.appendChild(sectorPanel);
-  rightColumn.appendChild(eventsPanel);
-  rightColumn.appendChild(quickPanel);
+  bottomDock.appendChild(eventsPanel);
+  bottomDock.appendChild(quickPanel);
 
   const screenRoot = document.createElement('div');
   screenRoot.className = 'screen-root';

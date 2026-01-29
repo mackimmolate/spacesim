@@ -185,60 +185,25 @@ body {
   transform: translateY(-1px);
 }
 
-.dock-trays {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  align-items: flex-end;
-  pointer-events: none;
+.dock-tab.is-alert {
+  animation: dock-pulse 1.6s ease-in-out infinite;
+  border-color: var(--panel-border-strong);
+  box-shadow: var(--glow-strong);
 }
 
-.dock-tray {
-  min-width: 240px;
-  max-width: 340px;
-  display: none;
-  gap: 8px;
-  padding: 10px;
-  border-radius: var(--radius-lg);
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  box-shadow: var(--panel-shadow), var(--glow-soft);
-  pointer-events: auto;
-}
-
-.dock-tray.is-open,
-.dock-tray-signal.is-open {
-  display: grid;
-}
-
-.dock-tray-signal {
-  display: grid;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-}
-
-.dock-tray-signal .events-panel {
-  max-height: 140px;
-  padding: 8px;
-}
-
-.dock-tray-signal .events-panel.is-expanded {
-  max-height: 260px;
-}
-
-.dock-tray-title {
-  font-size: 0.7rem;
-  font-family: var(--font-display);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.dock-tray-hint {
-  font-size: 0.7rem;
-  color: var(--text-soft);
+@keyframes dock-pulse {
+  0% {
+    transform: translateY(0);
+    box-shadow: 0 0 0 rgba(91, 228, 255, 0.0);
+  }
+  50% {
+    transform: translateY(-1px);
+    box-shadow: 0 0 14px rgba(91, 228, 255, 0.55);
+  }
+  100% {
+    transform: translateY(0);
+    box-shadow: 0 0 0 rgba(91, 228, 255, 0.0);
+  }
 }
 
 .ui-layout {
@@ -1156,11 +1121,6 @@ button:focus-visible {
   .dock-bar {
     flex-wrap: wrap;
     justify-content: center;
-  }
-
-  .dock-trays {
-    flex-direction: column;
-    align-items: center;
   }
 
   .sector-viewport {

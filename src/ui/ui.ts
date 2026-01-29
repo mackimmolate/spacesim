@@ -53,10 +53,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   dockRoot.className = 'ui-dock';
   const dockBar = document.createElement('div');
   dockBar.className = 'dock-bar';
-  const dockTrays = document.createElement('div');
-  dockTrays.className = 'dock-trays';
   dockRoot.appendChild(dockBar);
-  dockRoot.appendChild(dockTrays);
   container.appendChild(dockRoot);
 
   const eventsPanel = document.createElement('div');
@@ -322,50 +319,9 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   controlsScreen.body.appendChild(buttonRow);
   screenRoot.appendChild(controlsScreen.overlay);
 
-  const signalTray = document.createElement('div');
-  signalTray.className = 'dock-tray dock-tray-signal is-open';
-  signalTray.appendChild(eventsPanel);
-
-  const personnelTray = document.createElement('div');
-  personnelTray.className = 'dock-tray dock-tray-personnel';
-  const personnelTrayTitle = document.createElement('div');
-  personnelTrayTitle.className = 'dock-tray-title';
-  personnelTrayTitle.textContent = 'Personnel';
-  const personnelTrayHint = document.createElement('div');
-  personnelTrayHint.className = 'dock-tray-hint';
-  personnelTrayHint.textContent = 'Manage crew assignments and roster details.';
-  personnelTray.appendChild(personnelTrayTitle);
-  personnelTray.appendChild(personnelTrayHint);
-  personnelTray.appendChild(personnelButton);
-
-  const contractsTray = document.createElement('div');
-  contractsTray.className = 'dock-tray dock-tray-contracts';
-  const contractsTrayTitle = document.createElement('div');
-  contractsTrayTitle.className = 'dock-tray-title';
-  contractsTrayTitle.textContent = 'Contracts';
-  const contractsTrayHint = document.createElement('div');
-  contractsTrayHint.className = 'dock-tray-hint';
-  contractsTrayHint.textContent = 'Review available work and active operations.';
-  contractsTray.appendChild(contractsTrayTitle);
-  contractsTray.appendChild(contractsTrayHint);
-  contractsTray.appendChild(contractsButton);
-
-  const controlsTray = document.createElement('div');
-  controlsTray.className = 'dock-tray dock-tray-controls';
-  const controlsTrayTitle = document.createElement('div');
-  controlsTrayTitle.className = 'dock-tray-title';
-  controlsTrayTitle.textContent = 'Controls';
-  const controlsTrayHint = document.createElement('div');
-  controlsTrayHint.className = 'dock-tray-hint';
-  controlsTrayHint.textContent = 'Pause, speed, save, and system options.';
-  controlsTray.appendChild(controlsTrayTitle);
-  controlsTray.appendChild(controlsTrayHint);
-  controlsTray.appendChild(controlsButton);
-
-  dockTrays.appendChild(signalTray);
-  dockTrays.appendChild(personnelTray);
-  dockTrays.appendChild(contractsTray);
-  dockTrays.appendChild(controlsTray);
+  const signalScreen = createScreen('Signal', '');
+  signalScreen.body.appendChild(eventsPanel);
+  screenRoot.appendChild(signalScreen.overlay);
 
   const personnelTab = document.createElement('button');
   personnelTab.type = 'button';
@@ -395,6 +351,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   let personnelOpen = false;
   let contractsOpen = false;
   let controlsOpen = false;
+  let signalOpen = false;
 
   function closePersonnelScreen() {
     personnelOpen = false;
@@ -409,6 +366,11 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   function closeControlsScreen() {
     controlsOpen = false;
     setScreenOpen(controlsScreen, false);
+  }
+
+  function closeSignalScreen() {
+    signalOpen = false;
+    setScreenOpen(signalScreen, false);
   }
 
   personnelScreen.close.addEventListener('click', closePersonnelScreen);
@@ -429,6 +391,13 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   controlsScreen.overlay.addEventListener('click', (event) => {
     if (event.target === controlsScreen.overlay) {
       closeControlsScreen();
+    }
+  });
+
+  signalScreen.close.addEventListener('click', closeSignalScreen);
+  signalScreen.overlay.addEventListener('click', (event) => {
+    if (event.target === signalScreen.overlay) {
+      closeSignalScreen();
     }
   });
 
@@ -463,8 +432,24 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
       setScreenOpen(personnelScreen, false);
       contractsOpen = false;
       setScreenOpen(contractsScreen, false);
+      signalOpen = false;
+      setScreenOpen(signalScreen, false);
     }
     setScreenOpen(controlsScreen, controlsOpen);
+  }
+
+  function toggleSignalScreen() {
+    signalOpen = !signalOpen;
+    if (signalOpen) {
+      personnelOpen = false;
+      setScreenOpen(personnelScreen, false);
+      contractsOpen = false;
+      setScreenOpen(contractsScreen, false);
+      controlsOpen = false;
+      setScreenOpen(controlsScreen, false);
+      signalTab.classList.remove('is-alert');
+    }
+    setScreenOpen(signalScreen, signalOpen);
   }
 
   personnelButton.addEventListener('click', togglePersonnelScreen);
@@ -503,10 +488,11 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         event.preventDefault();
         event.stopImmediatePropagation();
       }
-      if (event.code === 'Escape' && (personnelOpen || contractsOpen || controlsOpen)) {
+      if (event.code === 'Escape' && (personnelOpen || contractsOpen || controlsOpen || signalOpen)) {
         closePersonnelScreen();
         closeContractsScreen();
         closeControlsScreen();
+        closeSignalScreen();
         event.preventDefault();
         event.stopImmediatePropagation();
       }
@@ -555,9 +541,6 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const pendingToasts: string[] = [];
   const MAX_TOASTS = 4;
   const TOAST_INTERVAL = 360;
-  let openDockTray: 'personnel' | 'contracts' | 'controls' | null = null;
-  let dockAutoCollapse: number | null = null;
-  const DOCK_COLLAPSE_MS = 6500;
 
   logToggle.addEventListener('click', () => {
     logPanelOpen = !logPanelOpen;
@@ -565,56 +548,10 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     logToggle.textContent = logPanelOpen ? 'Hide Log' : 'View Log';
   });
 
-  const clearDockAutoCollapse = () => {
-    if (dockAutoCollapse) {
-      window.clearTimeout(dockAutoCollapse);
-      dockAutoCollapse = null;
-    }
-  };
-
-  const scheduleDockAutoCollapse = () => {
-    clearDockAutoCollapse();
-    if (!openDockTray) {
-      return;
-    }
-    dockAutoCollapse = window.setTimeout(() => {
-      openDockTray = null;
-      personnelTray.classList.remove('is-open');
-      contractsTray.classList.remove('is-open');
-      controlsTray.classList.remove('is-open');
-      dockAutoCollapse = null;
-    }, DOCK_COLLAPSE_MS);
-  };
-
-  const setDockTrayOpen = (name: 'personnel' | 'contracts' | 'controls' | null) => {
-    openDockTray = name;
-    personnelTray.classList.toggle('is-open', name === 'personnel');
-    contractsTray.classList.toggle('is-open', name === 'contracts');
-    controlsTray.classList.toggle('is-open', name === 'controls');
-    scheduleDockAutoCollapse();
-  };
-
-  const toggleDockTray = (name: 'personnel' | 'contracts' | 'controls') => {
-    if (openDockTray === name) {
-      setDockTrayOpen(null);
-    } else {
-      setDockTrayOpen(name);
-    }
-  };
-
-  personnelTab.addEventListener('click', () => toggleDockTray('personnel'));
-  contractsTab.addEventListener('click', () => toggleDockTray('contracts'));
-  controlsTab.addEventListener('click', () => toggleDockTray('controls'));
-  signalTab.addEventListener('click', () => {
-    if (!eventToggle.disabled) {
-      toggleEventPanel();
-    }
-  });
-
-  [personnelTray, contractsTray, controlsTray].forEach((tray) => {
-    tray.addEventListener('pointerenter', clearDockAutoCollapse);
-    tray.addEventListener('pointerleave', scheduleDockAutoCollapse);
-  });
+  personnelTab.addEventListener('click', togglePersonnelScreen);
+  contractsTab.addEventListener('click', toggleContractsScreen);
+  controlsTab.addEventListener('click', toggleControlsScreen);
+  signalTab.addEventListener('click', toggleSignalScreen);
 
   const toggleEventPanel = () => {
     eventExpanded = !eventExpanded;
@@ -1117,6 +1054,12 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
       eventToggle.disabled = !hasEvent;
       eventToggle.classList.toggle('is-disabled', !hasEvent);
       eventStatus.classList.toggle('is-active', hasEvent);
+      if (hasEvent && eventKey !== lastEventKey) {
+        signalTab.classList.add('is-alert');
+      }
+      if (!hasEvent) {
+        signalTab.classList.remove('is-alert');
+      }
       if (!hasEvent && eventExpanded) {
         eventExpanded = false;
         eventsPanel.classList.remove('is-expanded');

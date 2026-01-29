@@ -219,10 +219,11 @@ export class InteriorScene {
     this.camera.bottom = -viewSize / 2;
     this.camera.updateProjectionMatrix();
 
-    // Isometric-ish view
-    const distance = 40;
-    this.camera.position.set(distance, distance, distance);
+    // TOP-DOWN view
+    const distance = 50;
+    this.camera.position.set(0, distance, 0); // Directly overhead
     this.camera.lookAt(0, 0, 0);
+    this.camera.rotation.z = 0; // Ensure consistent orientation
 
     const playerPos = this.tileToWorld(state.player.x, state.player.y);
     this.player.position.set(playerPos.x, 0.75, playerPos.z);
@@ -242,11 +243,11 @@ export class InteriorScene {
 
   private setupLights(): void {
     // FLOOD LIGHTS for maximum visibility
-    const ambient = new THREE.AmbientLight(0x3a4453, 2.5); // Very high ambient
+    const ambient = new THREE.AmbientLight(0x3a4453, 5.0); // Extreme ambient to ensure visibility
     this.scene.add(ambient);
 
     // Main "Sun" or overhead artificial light
-    const keyLight = new THREE.DirectionalLight(0xfff0dd, 1.8);
+    const keyLight = new THREE.DirectionalLight(0xfff0dd, 2.0);
     keyLight.position.set(10, 20, 5);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.set(2048, 2048); // High res shadows
@@ -256,15 +257,19 @@ export class InteriorScene {
     keyLight.shadow.camera.bottom = -20;
     this.scene.add(keyLight);
 
+    // Secondary fill light from opposite side
+    const fillLightDir = new THREE.DirectionalLight(0xaaccff, 1.5);
+    fillLightDir.position.set(-10, 20, -5);
+    this.scene.add(fillLightDir);
+
     // Rim light (Blue) for sci-fi contrast
     const rimLight = new THREE.DirectionalLight(0x4488ff, 1.0);
     rimLight.position.set(-10, 10, -10);
     this.scene.add(rimLight);
 
-    // Fill light (Teal) from below to light up shadows
-    // Ground color is bright grey to prevent black undersides
-    const fillLight = new THREE.HemisphereLight(0x555555, 0x333333, 1.2);
-    this.scene.add(fillLight);
+    // Hemisphere light from below to light up shadows
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.5);
+    this.scene.add(hemiLight);
   }
 
   private buildWalls(): void {

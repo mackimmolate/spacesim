@@ -29,6 +29,23 @@ export class InteriorScene {
   private readonly player: THREE.Mesh<THREE.CylinderGeometry, THREE.MeshStandardMaterial>;
   private readonly loader: GLTFLoader;
   private readonly assets: Partial<Record<keyof typeof ASSETS, THREE.Object3D>> = {};
+  private readonly debugTargets: THREE.Object3D[] = [];
+  private debugEnabled = false;
+  private debugBox: THREE.BoxHelper | null = null;
+  private debugAxes: THREE.AxesHelper | null = null;
+  private debugSelection: THREE.Object3D | null = null;
+  private readonly raycaster = new THREE.Raycaster();
+  private readonly pointer = new THREE.Vector2();
+  private readonly onKeyDown = (event: KeyboardEvent) => this.handleDebugKey(event);
+  private readonly onKeyUp = (event: KeyboardEvent) => this.handleDebugKeyUp(event);
+  private readonly onPointerDown = (event: PointerEvent) => this.handlePointerDown(event);
+  private readonly onPointerMove = (event: PointerEvent) => this.handlePointerMove(event);
+  private readonly onPointerUp = () => this.handlePointerUp();
+  private readonly onWheel = (event: WheelEvent) => this.handleWheel(event);
+  private isDragging = false;
+  private dragMode: 'move' | 'rotate' = 'move';
+  private lastPointer = new THREE.Vector2();
+  private axisLock: 'x' | 'y' | 'z' | null = null;
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -72,6 +89,13 @@ export class InteriorScene {
     this.loadAssets();
     this.buildCommanderSet();
     this.buildFallbackObjects();
+
+    window.addEventListener('keydown', this.onKeyDown);
+    window.addEventListener('keyup', this.onKeyUp);
+    window.addEventListener('pointerdown', this.onPointerDown);
+    window.addEventListener('pointermove', this.onPointerMove);
+    window.addEventListener('pointerup', this.onPointerUp);
+    window.addEventListener('wheel', this.onWheel, { passive: false });
   }
 
   render(state: GameState, width: number, height: number): void {
@@ -96,6 +120,12 @@ export class InteriorScene {
   }
 
   dispose(): void {
+    window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('keyup', this.onKeyUp);
+    window.removeEventListener('pointerdown', this.onPointerDown);
+    window.removeEventListener('pointermove', this.onPointerMove);
+    window.removeEventListener('pointerup', this.onPointerUp);
+    window.removeEventListener('wheel', this.onWheel);
     this.root.clear();
     this.floor.geometry.dispose();
     this.floor.material.dispose();
@@ -178,6 +208,7 @@ export class InteriorScene {
 
   private buildCommanderSet(): void {
     this.commanderGroup.clear();
+    this.debugTargets.length = 0;
     const chair = this.assets.chair ? this.assets.chair.clone(true) : this.createPlaceholder(0x4064a8);
     const consoleMain = this.assets.consoleMain
       ? this.assets.consoleMain.clone(true)
@@ -213,7 +244,10 @@ export class InteriorScene {
         }
       });
       this.commanderGroup.add(object);
+      this.debugTargets.push(object);
     });
+
+    this.refreshDebugHelpers();
   }
 
   private createPlaceholder(color: number): THREE.Mesh<THREE.BoxGeometry, THREE.MeshStandardMaterial> {
@@ -292,5 +326,173 @@ export class InteriorScene {
     const worldX = -HALF_WIDTH + TILE_SIZE / 2 + x * TILE_SIZE;
     const worldZ = -HALF_DEPTH + TILE_SIZE / 2 + y * TILE_SIZE;
     return new THREE.Vector3(worldX, 0, worldZ);
+  }
+
+  private handleDebugKey(event: KeyboardEvent): void {
+    if (event.code === 'KeyT') {
+      this.debugEnabled = !this.debugEnabled;
+      this.debugSelection = null;
+      this.refreshDebugHelpers();
+      return;
+    }
+
+    if (!this.debugEnabled || !this.debugSelection) {
+      return;
+    }
+
+    if (event.code === 'KeyX') {
+      this.axisLock = this.axisLock === 'x' ? null : 'x';
+      return;
+    }
+
+    if (event.code === 'KeyY') {
+      this.axisLock = this.axisLock === 'y' ? null : 'y';
+      return;
+    }
+
+    if (event.code === 'KeyZ') {
+      this.axisLock = this.axisLock === 'z' ? null : 'z';
+      return;
+    }
+
+    if (event.code === 'KeyP') {
+      this.printDebugTransforms();
+    }
+  }
+
+  private handleDebugKeyUp(event: KeyboardEvent): void {
+    void event;
+  }
+
+  private handlePointerDown(event: PointerEvent): void {
+    if (!this.debugEnabled) {
+      return;
+    }
+    this.updatePointer(event);
+    const hits = this.raycastTargets();
+    if (hits.length === 0) {
+      this.debugSelection = null;
+      this.refreshDebugHelpers();
+      return;
+    }
+
+    this.debugSelection = hits[0].object;
+    this.isDragging = true;
+    this.dragMode = event.shiftKey ? 'rotate' : 'move';
+    this.lastPointer.set(this.pointer.x, this.pointer.y);
+    this.refreshDebugHelpers();
+  }
+
+  private handlePointerMove(event: PointerEvent): void {
+    if (!this.debugEnabled || !this.isDragging || !this.debugSelection) {
+      return;
+    }
+    this.updatePointer(event);
+    const dx = this.pointer.x - this.lastPointer.x;
+    const dy = this.pointer.y - this.lastPointer.y;
+    this.lastPointer.set(this.pointer.x, this.pointer.y);
+
+    if (this.dragMode === 'rotate') {
+      this.debugSelection.rotation.y += dx * Math.PI;
+    } else {
+      const moveX = dx * WORLD_WIDTH * 0.2;
+      const moveZ = dy * WORLD_DEPTH * 0.2;
+      const moveY = -dy * 6;
+      switch (this.axisLock) {
+        case 'x':
+          this.debugSelection.position.x += moveX;
+          break;
+        case 'y':
+          this.debugSelection.position.y += moveY;
+          break;
+        case 'z':
+          this.debugSelection.position.z -= moveZ;
+          break;
+        default:
+          this.debugSelection.position.x += moveX;
+          this.debugSelection.position.z -= moveZ;
+          break;
+      }
+    }
+
+    this.refreshDebugHelpers();
+  }
+
+  private handlePointerUp(): void {
+    if (!this.debugEnabled) {
+      return;
+    }
+    this.isDragging = false;
+  }
+
+  private handleWheel(event: WheelEvent): void {
+    if (!this.debugEnabled || !this.debugSelection) {
+      return;
+    }
+    event.preventDefault();
+    const delta = Math.sign(event.deltaY);
+    const scaleFactor = delta > 0 ? 0.96 : 1.04;
+    this.debugSelection.scale.multiplyScalar(scaleFactor);
+    this.refreshDebugHelpers();
+  }
+
+  private updatePointer(event: PointerEvent): void {
+    this.pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+    this.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  }
+
+  private raycastTargets(): THREE.Intersection[] {
+    if (!this.debugSelection && this.debugTargets.length === 0) {
+      return [];
+    }
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    const meshes: THREE.Object3D[] = [];
+    this.debugTargets.forEach((object) => {
+      object.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          meshes.push(child);
+        }
+      });
+    });
+    return this.raycaster.intersectObjects(meshes, true);
+  }
+
+  private refreshDebugHelpers(): void {
+    if (this.debugBox) {
+      this.debugBox.removeFromParent();
+      this.debugBox.geometry?.dispose?.();
+      this.debugBox = null;
+    }
+    if (this.debugAxes) {
+      this.debugAxes.removeFromParent();
+      this.debugAxes = null;
+    }
+
+    if (!this.debugEnabled || !this.debugSelection) {
+      return;
+    }
+
+    this.debugBox = new THREE.BoxHelper(this.debugSelection, 0x66e0ff);
+    this.debugAxes = new THREE.AxesHelper(1.2);
+    this.debugAxes.position.copy(this.debugSelection.position);
+    this.scene.add(this.debugBox);
+    this.scene.add(this.debugAxes);
+  }
+
+  private printDebugTransforms(): void {
+    const output = this.debugTargets.map((target, index) => {
+      return {
+        index,
+        position: {
+          x: Number(target.position.x.toFixed(3)),
+          y: Number(target.position.y.toFixed(3)),
+          z: Number(target.position.z.toFixed(3))
+        },
+        rotationY: Number(target.rotation.y.toFixed(3)),
+        scale: Number(target.scale.x.toFixed(3))
+      };
+    });
+    // eslint-disable-next-line no-console
+    console.log('[Commander placement]', JSON.stringify(output, null, 2));
   }
 }

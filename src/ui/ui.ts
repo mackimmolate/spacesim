@@ -478,13 +478,17 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   let lastAvailableKey = '';
   let lastActiveKey = '__init__';
   let toastTimeout: number | null = null;
-  let lastLogLength = 0;
+  let lastLogSnapshot: string[] = [];
   let logPanelOpen = false;
   let sectorMapVisible = true;
   let currentMode: GameMode | null = null;
   let lastState: GameState | null = null;
   let hoveredSectorId: string | null = null;
   let eventExpanded = false;
+  let lastToastTime = 0;
+  const pendingToasts: string[] = [];
+  const MAX_TOASTS = 4;
+  const TOAST_INTERVAL = 360;
 
   logToggle.addEventListener('click', () => {
     logPanelOpen = !logPanelOpen;
@@ -513,6 +517,33 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const NODE_RADIUS = 4;
   const PICK_RADIUS = NODE_RADIUS + 6;
   const FRAME_PADDING = 12;
+
+  const showToast = (entry: string) => {
+    const line = document.createElement('div');
+    line.className = 'log-toast';
+    line.textContent = entry;
+    logContainer.appendChild(line);
+    if (logContainer.childElementCount > MAX_TOASTS) {
+      logContainer.firstElementChild?.remove();
+    }
+    window.setTimeout(() => {
+      line.classList.add('is-expiring');
+      window.setTimeout(() => {
+        line.remove();
+      }, 600);
+    }, 5200);
+  };
+
+  const flushToasts = (now: number) => {
+    while (pendingToasts.length > 0 && now - lastToastTime >= TOAST_INTERVAL) {
+      const entry = pendingToasts.shift();
+      if (entry) {
+        showToast(entry);
+        lastToastTime = now;
+        now += TOAST_INTERVAL;
+      }
+    }
+  };
 
   function computeMapScale(nodes: SectorNode[], width: number, height: number) {
     let maxRadius = 1;
@@ -697,24 +728,52 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
       updateNeedRow(needRows.stress, state.needs.stress);
       updateNeedRow(needRows.morale, state.needs.morale);
 
-      if (state.log.length < lastLogLength) {
-        lastLogLength = 0;
+      const nextLog = state.log;
+      if (nextLog.length === 0) {
+        lastLogSnapshot = [];
       }
-      if (state.log.length > lastLogLength) {
-        state.log.slice(lastLogLength).forEach((entry) => {
-          const line = document.createElement('div');
-          line.className = 'log-toast';
-          line.textContent = entry;
-          logContainer.appendChild(line);
-          window.setTimeout(() => {
-            line.classList.add('is-expiring');
-            window.setTimeout(() => {
-              line.remove();
-            }, 600);
-          }, 5200);
-        });
-        lastLogLength = state.log.length;
+      const addedEntries: string[] = [];
+      if (lastLogSnapshot.length === 0) {
+        addedEntries.push(...nextLog);
+      } else if (nextLog.length > lastLogSnapshot.length) {
+        addedEntries.push(...nextLog.slice(lastLogSnapshot.length));
+      } else if (
+        nextLog.length === lastLogSnapshot.length &&
+        nextLog[nextLog.length - 1] !== lastLogSnapshot[lastLogSnapshot.length - 1]
+      ) {
+        let shift = nextLog.length;
+        for (let drop = 0; drop <= nextLog.length; drop += 1) {
+          const remaining = nextLog.length - drop;
+          if (remaining < 0) {
+            break;
+          }
+          const previousTail = lastLogSnapshot.slice(drop);
+          const nextHead = nextLog.slice(0, remaining);
+          if (previousTail.length === nextHead.length) {
+            let matches = true;
+            for (let i = 0; i < previousTail.length; i += 1) {
+              if (previousTail[i] !== nextHead[i]) {
+                matches = false;
+                break;
+              }
+            }
+            if (matches) {
+              shift = drop;
+              break;
+            }
+          }
+        }
+        if (shift < nextLog.length) {
+          addedEntries.push(...nextLog.slice(nextLog.length - shift));
+        } else {
+          addedEntries.push(nextLog[nextLog.length - 1]);
+        }
       }
+      if (addedEntries.length > 0) {
+        pendingToasts.push(...addedEntries);
+      }
+      flushToasts(performance.now());
+      lastLogSnapshot = [...nextLog];
       if (logPanelOpen) {
         logList.innerHTML = '';
         state.log

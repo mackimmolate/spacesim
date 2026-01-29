@@ -196,7 +196,6 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   overlay.appendChild(logHeader);
   overlay.appendChild(logContainer);
   overlay.appendChild(logPanel);
-  overlay.appendChild(buttonRow);
   overlay.appendChild(message);
 
   const eventPanel = document.createElement('div');
@@ -211,7 +210,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const eventToggle = document.createElement('button');
   eventToggle.type = 'button';
   eventToggle.className = 'event-toggle';
-  eventToggle.textContent = 'Expand';
+  eventToggle.textContent = 'Expand All';
 
   eventHeader.appendChild(eventsHeader);
   eventHeader.appendChild(eventStatus);
@@ -234,9 +233,15 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   contractsButton.className = 'screen-launch';
   contractsButton.textContent = 'Contracts (C)';
 
+  const controlsButton = document.createElement('button');
+  controlsButton.type = 'button';
+  controlsButton.className = 'screen-launch';
+  controlsButton.textContent = 'Controls (K)';
+
   quickPanel.appendChild(quickHeader);
   quickPanel.appendChild(personnelButton);
   quickPanel.appendChild(contractsButton);
+  quickPanel.appendChild(controlsButton);
 
   const sectorHeader = document.createElement('div');
   sectorHeader.className = 'sector-header';
@@ -317,8 +322,13 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   contractsScreen.body.appendChild(trackerSection.section);
   screenRoot.appendChild(contractsScreen.overlay);
 
+  const controlsScreen = createScreen('Controls', 'K');
+  controlsScreen.body.appendChild(buttonRow);
+  screenRoot.appendChild(controlsScreen.overlay);
+
   let personnelOpen = false;
   let contractsOpen = false;
+  let controlsOpen = false;
 
   function closePersonnelScreen() {
     personnelOpen = false;
@@ -328,6 +338,11 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   function closeContractsScreen() {
     contractsOpen = false;
     setScreenOpen(contractsScreen, false);
+  }
+
+  function closeControlsScreen() {
+    controlsOpen = false;
+    setScreenOpen(controlsScreen, false);
   }
 
   personnelScreen.close.addEventListener('click', closePersonnelScreen);
@@ -341,6 +356,13 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   contractsScreen.overlay.addEventListener('click', (event) => {
     if (event.target === contractsScreen.overlay) {
       closeContractsScreen();
+    }
+  });
+
+  controlsScreen.close.addEventListener('click', closeControlsScreen);
+  controlsScreen.overlay.addEventListener('click', (event) => {
+    if (event.target === controlsScreen.overlay) {
+      closeControlsScreen();
     }
   });
 
@@ -362,12 +384,26 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     if (contractsOpen) {
       personnelOpen = false;
       setScreenOpen(personnelScreen, false);
+      controlsOpen = false;
+      setScreenOpen(controlsScreen, false);
     }
     setScreenOpen(contractsScreen, contractsOpen);
   }
 
+  function toggleControlsScreen() {
+    controlsOpen = !controlsOpen;
+    if (controlsOpen) {
+      personnelOpen = false;
+      setScreenOpen(personnelScreen, false);
+      contractsOpen = false;
+      setScreenOpen(contractsScreen, false);
+    }
+    setScreenOpen(controlsScreen, controlsOpen);
+  }
+
   personnelButton.addEventListener('click', togglePersonnelScreen);
   contractsButton.addEventListener('click', toggleContractsScreen);
+  controlsButton.addEventListener('click', toggleControlsScreen);
 
   function isTypingTarget(target: EventTarget | null): boolean {
     if (!(target instanceof HTMLElement)) {
@@ -396,9 +432,15 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
         event.preventDefault();
         event.stopImmediatePropagation();
       }
-      if (event.code === 'Escape' && (personnelOpen || contractsOpen)) {
+      if (event.code === 'KeyK') {
+        toggleControlsScreen();
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+      if (event.code === 'Escape' && (personnelOpen || contractsOpen || controlsOpen)) {
         closePersonnelScreen();
         closeContractsScreen();
+        closeControlsScreen();
         event.preventDefault();
         event.stopImmediatePropagation();
       }
@@ -450,11 +492,22 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     logToggle.textContent = logPanelOpen ? 'Hide Log' : 'View Log';
   });
 
-  eventToggle.addEventListener('click', (event) => {
-    event.stopPropagation();
+  const toggleEventPanel = () => {
     eventExpanded = !eventExpanded;
     eventsPanel.classList.toggle('is-expanded', eventExpanded);
-    eventToggle.textContent = eventExpanded ? 'Collapse' : 'Expand';
+    eventToggle.textContent = eventExpanded ? 'Collapse All' : 'Expand All';
+  };
+
+  eventHeader.addEventListener('click', () => {
+    if (eventToggle.disabled) {
+      return;
+    }
+    toggleEventPanel();
+  });
+
+  eventToggle.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleEventPanel();
   });
 
   const NODE_RADIUS = 4;
@@ -888,7 +941,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
       if (!hasEvent && eventExpanded) {
         eventExpanded = false;
         eventsPanel.classList.remove('is-expanded');
-        eventToggle.textContent = 'Expand';
+        eventToggle.textContent = 'Expand All';
       }
       if (eventKey !== lastEventKey) {
         eventPanel.innerHTML = '';

@@ -29,6 +29,14 @@ export class InteriorScene {
   private readonly player: THREE.Mesh<THREE.CylinderGeometry, THREE.MeshStandardMaterial>;
   private readonly loader: GLTFLoader;
   private readonly assets: Partial<Record<keyof typeof ASSETS, THREE.Object3D>> = {};
+  private readonly debugTargets: THREE.Object3D[] = [];
+  private debugEnabled = false;
+  private debugIndex = 0;
+  private debugBox: THREE.BoxHelper | null = null;
+  private debugAxes: THREE.AxesHelper | null = null;
+  private readonly onKeyDown = (event: KeyboardEvent) => this.handleDebugKey(event);
+  private readonly onKeyUp = (event: KeyboardEvent) => this.handleDebugKeyUp(event);
+  private debugShift = false;
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -72,6 +80,9 @@ export class InteriorScene {
     this.loadAssets();
     this.buildCommanderSet();
     this.buildFallbackObjects();
+
+    window.addEventListener('keydown', this.onKeyDown);
+    window.addEventListener('keyup', this.onKeyUp);
   }
 
   render(state: GameState, width: number, height: number): void {
@@ -96,6 +107,8 @@ export class InteriorScene {
   }
 
   dispose(): void {
+    window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('keyup', this.onKeyUp);
     this.root.clear();
     this.floor.geometry.dispose();
     this.floor.material.dispose();
@@ -178,6 +191,7 @@ export class InteriorScene {
 
   private buildCommanderSet(): void {
     this.commanderGroup.clear();
+    this.debugTargets.length = 0;
     const chair = this.assets.chair ? this.assets.chair.clone(true) : this.createPlaceholder(0x4064a8);
     const consoleMain = this.assets.consoleMain
       ? this.assets.consoleMain.clone(true)
@@ -213,7 +227,10 @@ export class InteriorScene {
         }
       });
       this.commanderGroup.add(object);
+      this.debugTargets.push(object);
     });
+
+    this.refreshDebugHelpers();
   }
 
   private createPlaceholder(color: number): THREE.Mesh<THREE.BoxGeometry, THREE.MeshStandardMaterial> {
@@ -292,5 +309,120 @@ export class InteriorScene {
     const worldX = -HALF_WIDTH + TILE_SIZE / 2 + x * TILE_SIZE;
     const worldZ = -HALF_DEPTH + TILE_SIZE / 2 + y * TILE_SIZE;
     return new THREE.Vector3(worldX, 0, worldZ);
+  }
+
+  private handleDebugKey(event: KeyboardEvent): void {
+    if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
+      this.debugShift = true;
+      return;
+    }
+
+    if (event.code === 'KeyT') {
+      this.debugEnabled = !this.debugEnabled;
+      this.refreshDebugHelpers();
+      return;
+    }
+
+    if (!this.debugEnabled || this.debugTargets.length === 0) {
+      return;
+    }
+
+    if (event.code === 'Tab') {
+      event.preventDefault();
+      this.debugIndex = (this.debugIndex + 1) % this.debugTargets.length;
+      this.refreshDebugHelpers();
+      return;
+    }
+
+    const target = this.debugTargets[this.debugIndex];
+    const moveStep = this.debugShift ? 0.2 : 0.05;
+    const rotStep = this.debugShift ? 0.1 : 0.03;
+    const scaleStep = this.debugShift ? 0.05 : 0.02;
+
+    switch (event.code) {
+      case 'ArrowUp':
+        target.position.z -= moveStep;
+        break;
+      case 'ArrowDown':
+        target.position.z += moveStep;
+        break;
+      case 'ArrowLeft':
+        target.position.x -= moveStep;
+        break;
+      case 'ArrowRight':
+        target.position.x += moveStep;
+        break;
+      case 'PageUp':
+        target.position.y += moveStep;
+        break;
+      case 'PageDown':
+        target.position.y -= moveStep;
+        break;
+      case 'KeyQ':
+        target.rotation.y += rotStep;
+        break;
+      case 'KeyE':
+        target.rotation.y -= rotStep;
+        break;
+      case 'BracketLeft':
+        target.scale.multiplyScalar(1 - scaleStep);
+        break;
+      case 'BracketRight':
+        target.scale.multiplyScalar(1 + scaleStep);
+        break;
+      case 'KeyP':
+        this.printDebugTransforms();
+        break;
+      default:
+        return;
+    }
+
+    this.refreshDebugHelpers();
+  }
+
+  private handleDebugKeyUp(event: KeyboardEvent): void {
+    if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
+      this.debugShift = false;
+    }
+  }
+
+  private refreshDebugHelpers(): void {
+    if (this.debugBox) {
+      this.debugBox.removeFromParent();
+      this.debugBox.geometry?.dispose?.();
+      this.debugBox = null;
+    }
+    if (this.debugAxes) {
+      this.debugAxes.removeFromParent();
+      this.debugAxes = null;
+    }
+
+    if (!this.debugEnabled || this.debugTargets.length === 0) {
+      return;
+    }
+
+    const target = this.debugTargets[this.debugIndex];
+    this.debugBox = new THREE.BoxHelper(target, 0x66e0ff);
+    this.debugAxes = new THREE.AxesHelper(1.2);
+    this.debugAxes.position.copy(target.position);
+    this.scene.add(this.debugBox);
+    this.scene.add(this.debugAxes);
+  }
+
+  private printDebugTransforms(): void {
+    const output = this.debugTargets.map((target, index) => {
+      return {
+        index,
+        position: {
+          x: Number(target.position.x.toFixed(3)),
+          y: Number(target.position.y.toFixed(3)),
+          z: Number(target.position.z.toFixed(3))
+        },
+        rotationY: Number(target.rotation.y.toFixed(3)),
+        scale: Number(target.scale.x.toFixed(3))
+      };
+    });
+    // eslint-disable-next-line no-console
+    console.log('[Commander placement]', JSON.stringify(output, null, 2));
   }
 }

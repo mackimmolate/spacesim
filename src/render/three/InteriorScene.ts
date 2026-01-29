@@ -29,6 +29,8 @@ export class InteriorScene {
   private readonly panelGlowMap: THREE.CanvasTexture;
   private readonly decalMap: THREE.CanvasTexture;
   private readonly normalMap: THREE.CanvasTexture;
+  private readonly floorMaterial: THREE.MeshStandardMaterial;
+  private readonly textureLoader: THREE.TextureLoader;
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -85,13 +87,13 @@ export class InteriorScene {
     this.normalMap = this.createNormalMap();
     this.applyMaterialTextures();
 
-    const floorMaterial = new THREE.MeshStandardMaterial({
+    this.floorMaterial = new THREE.MeshStandardMaterial({
       color: 0x141b2a,
       roughness: 0.8,
       metalness: 0.35
     });
     const floorGeometry = new THREE.PlaneGeometry(WORLD_WIDTH, WORLD_DEPTH);
-    this.floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    this.floor = new THREE.Mesh(floorGeometry, this.floorMaterial);
     this.floor.rotation.x = -Math.PI / 2;
     this.floor.receiveShadow = true;
     this.root.add(this.floor);
@@ -109,6 +111,8 @@ export class InteriorScene {
     this.objectGroup.add(this.player);
 
     this.setupLights();
+    this.textureLoader = new THREE.TextureLoader();
+    this.loadFloorTexture();
     this.buildCommanderSet();
     this.buildFallbackObjects();
   }
@@ -137,7 +141,7 @@ export class InteriorScene {
   dispose(): void {
     this.root.clear();
     this.floor.geometry.dispose();
-    this.floor.material.dispose();
+    this.floorMaterial.dispose();
     this.player.geometry.dispose();
     this.player.material.dispose();
     this.metalMap.dispose();
@@ -181,6 +185,28 @@ export class InteriorScene {
     const consoleGlow = new THREE.PointLight(0x7bd7ff, 1.0, 12, 2);
     consoleGlow.position.set(0, 1.4, -3.4);
     this.scene.add(consoleGlow);
+  }
+
+  private loadFloorTexture(): void {
+    const baseUrl = (import.meta as ImportMeta).env?.BASE_URL ?? '/';
+    const resolvedBase = baseUrl.startsWith('http')
+      ? baseUrl
+      : new URL(baseUrl, window.location.origin).toString();
+    const textureUrl = new URL(
+      'assets/vendor/pixellab-Top-down-sci-fi-command-center-1769701263922.png',
+      resolvedBase
+    ).toString();
+
+    this.textureLoader.load(textureUrl, (texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(1, 1);
+      this.floorMaterial.map = texture;
+      this.floorMaterial.roughness = 0.75;
+      this.floorMaterial.metalness = 0.2;
+      this.floorMaterial.needsUpdate = true;
+    });
   }
 
   private buildWalls(): void {

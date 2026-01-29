@@ -11,10 +11,10 @@ const HALF_WIDTH = WORLD_WIDTH / 2;
 const HALF_DEPTH = WORLD_DEPTH / 2;
 
 const ASSETS = {
-  chair: '/assets/vendor/sketchfab/chair/sci-fi_chairs_demo.glb',
-  consoleMain: '/assets/vendor/sketchfab/console-main/sci-fi_computer_desk_console.glb',
-  consoleSecondary: '/assets/vendor/sketchfab/console-secondary/sci-fi_computer_console.glb',
-  prop: '/assets/vendor/sketchfab/prop/sci-fi_military_canteen.glb'
+  chair: 'assets/vendor/sketchfab/chair/sci-fi_chairs_demo.glb',
+  consoleMain: 'assets/vendor/sketchfab/console-main/sci-fi_computer_desk_console.glb',
+  consoleSecondary: 'assets/vendor/sketchfab/console-secondary/sci-fi_computer_console.glb',
+  prop: 'assets/vendor/sketchfab/prop/sci-fi_military_canteen.glb'
 };
 
 const ISO_YAW = Math.PI / 4;
@@ -239,11 +239,15 @@ export class InteriorScene {
   }
 
   private loadAsset(name: keyof typeof ASSETS, url: string): void {
-    this.loader.load(url, (gltf: GLTF) => {
+    this.loader.load(this.resolveAssetUrl(url), (gltf: GLTF) => {
       const primary = this.extractPrimaryObject(gltf.scene);
       this.assets[name] = primary;
       this.buildCommanderSet();
     });
+  }
+
+  private resolveAssetUrl(path: string): string {
+    return new URL(path, import.meta.env.BASE_URL).toString();
   }
 
   private extractPrimaryObject(root: THREE.Object3D): THREE.Object3D {

@@ -37,7 +37,6 @@ export class ThreeRenderer {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer.useLegacyLights = false;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.1;
     this.renderer.setClearColor(COMMAND_BG, 1);
@@ -132,7 +131,8 @@ export class ThreeRenderer {
 
   private loadInteriorEnvironment(): void {
     const loader = new RGBELoader();
-    loader.load('/assets/vendor/polyhaven/studio_small_03_1k.hdr', (texture: THREE.DataTexture) => {
+    const hdrUrl = new URL('assets/vendor/polyhaven/studio_small_03_1k.hdr', import.meta.env.BASE_URL).toString();
+    loader.load(hdrUrl, (texture: THREE.DataTexture) => {
       const envMap = this.pmremGenerator.fromEquirectangular(texture).texture;
       texture.dispose();
       if (this.interiorEnvMap) {

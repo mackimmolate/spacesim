@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
@@ -21,9 +20,7 @@ export class ThreeRenderer {
   private readonly sectorOverlay: SectorOverlay;
   private readonly container: HTMLElement;
   private readonly resizeObserver: ResizeObserver;
-  private readonly pmremGenerator: THREE.PMREMGenerator;
   private readonly composer: EffectComposer;
-  private interiorEnvMap: THREE.Texture | null = null;
   private currentSeed = '';
   private lastMode: GameMode | null = null;
   private sectorClickHandler: ((nodeId: string) => void) | null = null;
@@ -77,10 +74,6 @@ export class ThreeRenderer {
 
     const outputPass = new OutputPass();
     this.composer.addPass(outputPass);
-
-    this.pmremGenerator = new THREE.PMREMGenerator(this.renderer);
-    this.pmremGenerator.compileEquirectangularShader();
-    this.loadInteriorEnvironment();
 
     this.resizeObserver = new ResizeObserver(() => this.handleResize());
     this.resizeObserver.observe(container);
@@ -154,31 +147,9 @@ export class ThreeRenderer {
     this.spaceScene.dispose();
     this.interiorScene.dispose();
     this.sectorOverlay.dispose();
-    if (this.interiorEnvMap) {
-      this.interiorEnvMap.dispose();
-    }
-    this.pmremGenerator.dispose();
     this.composer.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
-  }
-
-  private loadInteriorEnvironment(): void {
-    const loader = new RGBELoader();
-    const baseUrl = (import.meta as ImportMeta).env?.BASE_URL ?? '/';
-    const resolvedBase = baseUrl.startsWith('http')
-      ? baseUrl
-      : new URL(baseUrl, window.location.origin).toString();
-    const hdrUrl = new URL('assets/vendor/polyhaven/studio_small_03_1k.hdr', resolvedBase).toString();
-    loader.load(hdrUrl, (texture: THREE.DataTexture) => {
-      const envMap = this.pmremGenerator.fromEquirectangular(texture).texture;
-      texture.dispose();
-      if (this.interiorEnvMap) {
-        this.interiorEnvMap.dispose();
-      }
-      this.interiorEnvMap = envMap;
-      this.interiorScene.setEnvironmentMap(envMap);
-    });
   }
 
   private handleResize(): void {

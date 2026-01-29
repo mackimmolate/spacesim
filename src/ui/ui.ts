@@ -200,12 +200,24 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   overlay.appendChild(message);
 
   const eventPanel = document.createElement('div');
-  eventPanel.className = 'crew-event';
+  eventPanel.className = 'crew-event event-panel';
+  const eventHeader = document.createElement('div');
+  eventHeader.className = 'event-header';
   const eventsHeader = document.createElement('div');
   eventsHeader.className = 'panel-title';
-  eventsHeader.textContent = 'Events';
+  eventsHeader.textContent = 'Signal';
+  const eventStatus = document.createElement('span');
+  eventStatus.className = 'event-status';
+  const eventToggle = document.createElement('button');
+  eventToggle.type = 'button';
+  eventToggle.className = 'event-toggle';
+  eventToggle.textContent = 'Expand';
 
-  eventsPanel.appendChild(eventsHeader);
+  eventHeader.appendChild(eventsHeader);
+  eventHeader.appendChild(eventStatus);
+  eventHeader.appendChild(eventToggle);
+
+  eventsPanel.appendChild(eventHeader);
   eventsPanel.appendChild(eventPanel);
 
   const quickHeader = document.createElement('div');
@@ -430,11 +442,19 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   let currentMode: GameMode | null = null;
   let lastState: GameState | null = null;
   let hoveredSectorId: string | null = null;
+  let eventExpanded = false;
 
   logToggle.addEventListener('click', () => {
     logPanelOpen = !logPanelOpen;
     logPanel.classList.toggle('is-open', logPanelOpen);
     logToggle.textContent = logPanelOpen ? 'Hide Log' : 'View Log';
+  });
+
+  eventToggle.addEventListener('click', (event) => {
+    event.stopPropagation();
+    eventExpanded = !eventExpanded;
+    eventsPanel.classList.toggle('is-expanded', eventExpanded);
+    eventToggle.textContent = eventExpanded ? 'Collapse' : 'Expand';
   });
 
   const NODE_RADIUS = 4;
@@ -861,9 +881,19 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
             .map((choice) => choice.id)
             .join(',')}`
         : '';
+      const hasEvent = Boolean(state.company.pendingEvent);
+      eventToggle.disabled = !hasEvent;
+      eventToggle.classList.toggle('is-disabled', !hasEvent);
+      eventStatus.classList.toggle('is-active', hasEvent);
+      if (!hasEvent && eventExpanded) {
+        eventExpanded = false;
+        eventsPanel.classList.remove('is-expanded');
+        eventToggle.textContent = 'Expand';
+      }
       if (eventKey !== lastEventKey) {
         eventPanel.innerHTML = '';
         if (state.company.pendingEvent) {
+          eventsPanel.classList.add('has-event');
           const title = document.createElement('div');
           title.className = 'event-title';
           title.textContent = state.company.pendingEvent.title;
@@ -885,6 +915,12 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
           eventPanel.classList.remove('event-enter');
           void eventPanel.offsetWidth;
           eventPanel.classList.add('event-enter');
+        } else {
+          eventsPanel.classList.remove('has-event');
+          const empty = document.createElement('div');
+          empty.className = 'event-empty';
+          empty.textContent = 'Quiet on all channels.';
+          eventPanel.appendChild(empty);
         }
         lastEventKey = eventKey;
       }

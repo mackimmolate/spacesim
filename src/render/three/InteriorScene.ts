@@ -84,6 +84,8 @@ export class InteriorScene {
   private readonly objectGroup: THREE.Group;
   private readonly commanderGroup: THREE.Group;
   private readonly player: THREE.Mesh<THREE.CapsuleGeometry, THREE.MeshStandardMaterial>;
+  // NEW: Camera headlight for guaranteed visibility
+  private readonly headlight: THREE.DirectionalLight;
 
   // New Materials (Clean Sci-Fi)
   private readonly materials: {
@@ -111,6 +113,12 @@ export class InteriorScene {
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 500);
     this.camera.up.set(0, 0, -1);
 
+    // Setup Headlight attached to camera
+    this.headlight = new THREE.DirectionalLight(0xffffff, 0.8);
+    this.headlight.position.set(0, 0, 10); // Points along -Z (camera look dir)
+    this.camera.add(this.headlight);
+    this.scene.add(this.camera); // Add camera to scene so headlight updates
+
     this.root = new THREE.Group();
     this.wallGroup = new THREE.Group();
     this.objectGroup = new THREE.Group();
@@ -132,10 +140,10 @@ export class InteriorScene {
         map: this.textures.floor,
         roughness: 0.9, // Almost fully diffuse
         metalness: 0.05, // Barely metallic
-        color: 0xeeeeee // Lighter base color
+        color: 0xdddddd // Much lighter base color (was 0xeeeeee)
       }),
       wall: new THREE.MeshStandardMaterial({
-        color: 0x3a4048, // Lighter grey
+        color: 0x4a5058, // Lighter grey
         roughness: 0.6,
         metalness: 0.05,
         normalMap: this.textures.wallNormal,
@@ -203,7 +211,8 @@ export class InteriorScene {
 
   render(state: GameState, width: number, height: number): void {
     const aspect = width / height;
-    const viewSize = Math.max(WORLD_WIDTH, WORLD_DEPTH) * 0.65;
+    // Widen FOV to see more of the room
+    const viewSize = Math.max(WORLD_WIDTH, WORLD_DEPTH) * 0.85; // Increased from 0.65
     this.camera.left = (-viewSize * aspect) / 2;
     this.camera.right = (viewSize * aspect) / 2;
     this.camera.top = viewSize / 2;
@@ -233,11 +242,11 @@ export class InteriorScene {
 
   private setupLights(): void {
     // FLOOD LIGHTS for maximum visibility
-    const ambient = new THREE.AmbientLight(0x2a3443, 3.0); // Very high ambient
+    const ambient = new THREE.AmbientLight(0x3a4453, 2.5); // Very high ambient
     this.scene.add(ambient);
 
     // Main "Sun" or overhead artificial light
-    const keyLight = new THREE.DirectionalLight(0xfff0dd, 2.0);
+    const keyLight = new THREE.DirectionalLight(0xfff0dd, 1.8);
     keyLight.position.set(10, 20, 5);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.set(2048, 2048); // High res shadows
@@ -248,13 +257,13 @@ export class InteriorScene {
     this.scene.add(keyLight);
 
     // Rim light (Blue) for sci-fi contrast
-    const rimLight = new THREE.DirectionalLight(0x4488ff, 1.2);
+    const rimLight = new THREE.DirectionalLight(0x4488ff, 1.0);
     rimLight.position.set(-10, 10, -10);
     this.scene.add(rimLight);
 
     // Fill light (Teal) from below to light up shadows
     // Ground color is bright grey to prevent black undersides
-    const fillLight = new THREE.HemisphereLight(0x444444, 0x222222, 1.5);
+    const fillLight = new THREE.HemisphereLight(0x555555, 0x333333, 1.2);
     this.scene.add(fillLight);
   }
 

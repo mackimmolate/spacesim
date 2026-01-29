@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import type { GameState } from '../sim/types';
 import { GameMode } from '../sim/modes';
 import { SpaceScene } from './three/SpaceScene';
@@ -18,6 +22,7 @@ export class ThreeRenderer {
   private readonly container: HTMLElement;
   private readonly resizeObserver: ResizeObserver;
   private readonly pmremGenerator: THREE.PMREMGenerator;
+  private readonly composer: EffectComposer;
   private interiorEnvMap: THREE.Texture | null = null;
   private currentSeed = '';
   private lastMode: GameMode | null = null;
@@ -53,6 +58,26 @@ export class ThreeRenderer {
     this.interiorScene = new InteriorScene();
     this.sectorOverlay = new SectorOverlay();
 
+    // Setup Post-Processing
+    this.composer = new EffectComposer(this.renderer);
+    const renderPass = new RenderPass(this.interiorScene.scene, this.interiorScene.camera);
+    this.composer.addPass(renderPass);
+
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      1.5,
+      0.4,
+      0.85
+    );
+    // Adjust threshold so only very bright things glow
+    bloomPass.threshold = 0.8;
+    bloomPass.strength = 1.2;
+    bloomPass.radius = 0.5;
+    this.composer.addPass(bloomPass);
+
+    const outputPass = new OutputPass();
+    this.composer.addPass(outputPass);
+
     this.pmremGenerator = new THREE.PMREMGenerator(this.renderer);
     this.pmremGenerator.compileEquirectangularShader();
     this.loadInteriorEnvironment();
@@ -78,9 +103,8 @@ export class ThreeRenderer {
       this.lastMode = state.mode;
     }
 
-    this.renderer.clear();
-
     if (state.mode === GameMode.Command) {
+      this.renderer.clear();
       this.spaceScene.update(state, width, height);
       this.renderer.render(this.spaceScene.scene, this.spaceScene.camera);
 
@@ -93,8 +117,17 @@ export class ThreeRenderer {
         this.renderer.render(this.sectorOverlay.scene, this.sectorOverlay.camera);
       }
     } else {
+      // For Interior, use the Composer (Bloom)
       this.interiorScene.render(state, width, height);
-      this.renderer.render(this.interiorScene.scene, this.interiorScene.camera);
+      // We need to update the composer size if it changed, but usually handleResize does it.
+      // However, the composer needs the correct camera for the RenderPass if we swapped scenes,
+      // but here we only use composer for Interior.
+
+      // Update the RenderPass camera/scene just in case (though scene is static)
+      // The camera changes every frame in interiorScene.render due to projection updates
+      (this.composer.passes[0] as RenderPass).camera = this.interiorScene.camera;
+
+      this.composer.render();
     }
   }
 
@@ -125,6 +158,7 @@ export class ThreeRenderer {
       this.interiorEnvMap.dispose();
     }
     this.pmremGenerator.dispose();
+    this.composer.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
@@ -150,7 +184,13 @@ export class ThreeRenderer {
   private handleResize(): void {
     const width = Math.max(1, this.container.clientWidth);
     const height = Math.max(1, this.container.clientHeight);
-    this.renderer.setSize(width, height, true);
+    this.renderer.setSize(width, height, false); // Update canvas style? No, we set style manually if needed.
+    // Actually setSize(w, h, updateStyle) -> false to prevent messing with CSS if we want full control
+    // But usually true is fine.
+    // IMPORTANT: Update composer size
+    if (this.composer) {
+      this.composer.setSize(width, height);
+    }
   }
 
   private getSectorViewport(): { x: number; y: number; width: number; height: number } | null {

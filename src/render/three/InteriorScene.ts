@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { GameState } from '../../sim/types';
 import { MAP_HEIGHT, MAP_WIDTH } from '../../sim/interior/map';
 import { INTERIOR_OBJECTS } from '../../sim/interior/objects';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const TILE_SIZE = 1.6;
 const WORLD_WIDTH = MAP_WIDTH * TILE_SIZE;
@@ -239,7 +239,7 @@ export class InteriorScene {
   }
 
   private loadAsset(name: keyof typeof ASSETS, url: string): void {
-    this.loader.load(url, (gltf) => {
+    this.loader.load(url, (gltf: GLTF) => {
       const primary = this.extractPrimaryObject(gltf.scene);
       this.assets[name] = primary;
       this.buildCommanderSet();

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import type { GameState } from '../sim/types';
 import { GameMode } from '../sim/modes';
 import { SpaceScene } from './three/SpaceScene';
@@ -37,7 +37,7 @@ export class ThreeRenderer {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer.physicallyCorrectLights = true;
+    this.renderer.useLegacyLights = false;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.1;
     this.renderer.setClearColor(COMMAND_BG, 1);
@@ -132,7 +132,7 @@ export class ThreeRenderer {
 
   private loadInteriorEnvironment(): void {
     const loader = new RGBELoader();
-    loader.load('/assets/vendor/polyhaven/studio_small_03_1k.hdr', (texture) => {
+    loader.load('/assets/vendor/polyhaven/studio_small_03_1k.hdr', (texture: THREE.DataTexture) => {
       const envMap = this.pmremGenerator.fromEquirectangular(texture).texture;
       texture.dispose();
       if (this.interiorEnvMap) {

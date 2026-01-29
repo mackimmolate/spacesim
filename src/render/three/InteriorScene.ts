@@ -17,7 +17,6 @@ const ASSETS = {
   prop: 'assets/vendor/sketchfab/prop/sci-fi_military_canteen.glb'
 };
 
-const ISO_YAW = Math.PI / 4;
 
 export class InteriorScene {
   readonly scene: THREE.Scene;
@@ -35,7 +34,7 @@ export class InteriorScene {
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(0x04060c, 18, 48);
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 200);
-    this.camera.rotation.order = 'YXZ';
+    this.camera.up.set(0, 0, -1);
 
     this.root = new THREE.Group();
     this.wallGroup = new THREE.Group();
@@ -84,12 +83,8 @@ export class InteriorScene {
     this.camera.bottom = -viewSize / 2;
     this.camera.updateProjectionMatrix();
 
-    const distance = Math.max(WORLD_WIDTH, WORLD_DEPTH) * 0.7;
-    this.camera.position.set(
-      Math.cos(ISO_YAW) * distance,
-      distance * 0.65,
-      Math.sin(ISO_YAW) * distance
-    );
+    const distance = Math.max(WORLD_WIDTH, WORLD_DEPTH) * 0.9;
+    this.camera.position.set(0, distance, 0);
     this.camera.lookAt(0, 0, 0);
 
     const playerPos = this.tileToWorld(state.player.x, state.player.y);

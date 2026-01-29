@@ -2,21 +2,12 @@ import * as THREE from 'three';
 import type { GameState } from '../../sim/types';
 import { MAP_HEIGHT, MAP_WIDTH } from '../../sim/interior/map';
 import { INTERIOR_OBJECTS } from '../../sim/interior/objects';
-import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const TILE_SIZE = 1.6;
 const WORLD_WIDTH = MAP_WIDTH * TILE_SIZE;
 const WORLD_DEPTH = MAP_HEIGHT * TILE_SIZE;
 const HALF_WIDTH = WORLD_WIDTH / 2;
 const HALF_DEPTH = WORLD_DEPTH / 2;
-
-const ASSETS = {
-  chair: 'assets/vendor/sketchfab/chair/sci-fi_chairs_demo.glb',
-  consoleMain: 'assets/vendor/sketchfab/console-main/sci-fi_computer_desk_console.glb',
-  consoleSecondary: 'assets/vendor/sketchfab/console-secondary/sci-fi_computer_console.glb',
-  prop: 'assets/vendor/sketchfab/prop/sci-fi_military_canteen.glb'
-};
-
 
 export class InteriorScene {
   readonly scene: THREE.Scene;
@@ -27,25 +18,11 @@ export class InteriorScene {
   private readonly objectGroup: THREE.Group;
   private readonly commanderGroup: THREE.Group;
   private readonly player: THREE.Mesh<THREE.CylinderGeometry, THREE.MeshStandardMaterial>;
-  private readonly loader: GLTFLoader;
-  private readonly assets: Partial<Record<keyof typeof ASSETS, THREE.Object3D>> = {};
-  private readonly debugTargets: THREE.Object3D[] = [];
-  private debugEnabled = false;
-  private debugBox: THREE.BoxHelper | null = null;
-  private debugAxes: THREE.AxesHelper | null = null;
-  private debugSelection: THREE.Object3D | null = null;
-  private readonly raycaster = new THREE.Raycaster();
-  private readonly pointer = new THREE.Vector2();
-  private readonly onKeyDown = (event: KeyboardEvent) => this.handleDebugKey(event);
-  private readonly onKeyUp = (event: KeyboardEvent) => this.handleDebugKeyUp(event);
-  private readonly onPointerDown = (event: PointerEvent) => this.handlePointerDown(event);
-  private readonly onPointerMove = (event: PointerEvent) => this.handlePointerMove(event);
-  private readonly onPointerUp = () => this.handlePointerUp();
-  private readonly onWheel = (event: WheelEvent) => this.handleWheel(event);
-  private isDragging = false;
-  private dragMode: 'move' | 'rotate' = 'move';
-  private lastPointer = new THREE.Vector2();
-  private axisLock: 'x' | 'y' | 'z' | null = null;
+  private readonly accentMaterial: THREE.MeshStandardMaterial;
+  private readonly metalMaterial: THREE.MeshStandardMaterial;
+  private readonly darkMetalMaterial: THREE.MeshStandardMaterial;
+  private readonly glassMaterial: THREE.MeshStandardMaterial;
+  private readonly lightStripMaterial: THREE.MeshStandardMaterial;
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -59,6 +36,40 @@ export class InteriorScene {
     this.commanderGroup = new THREE.Group();
     this.scene.add(this.root);
     this.root.add(this.wallGroup, this.objectGroup, this.commanderGroup);
+
+    this.accentMaterial = new THREE.MeshStandardMaterial({
+      color: 0x2b7cff,
+      roughness: 0.35,
+      metalness: 0.6,
+      emissive: 0x0c2a4a,
+      emissiveIntensity: 0.4
+    });
+    this.metalMaterial = new THREE.MeshStandardMaterial({
+      color: 0x3b4558,
+      roughness: 0.55,
+      metalness: 0.6
+    });
+    this.darkMetalMaterial = new THREE.MeshStandardMaterial({
+      color: 0x1a212f,
+      roughness: 0.65,
+      metalness: 0.4
+    });
+    this.glassMaterial = new THREE.MeshStandardMaterial({
+      color: 0x88c9ff,
+      roughness: 0.15,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.5,
+      emissive: 0x255a85,
+      emissiveIntensity: 0.6
+    });
+    this.lightStripMaterial = new THREE.MeshStandardMaterial({
+      color: 0x73cfff,
+      roughness: 0.2,
+      metalness: 0.1,
+      emissive: 0x2b6cff,
+      emissiveIntensity: 1.2
+    });
 
     const floorMaterial = new THREE.MeshStandardMaterial({
       color: 0x0b0f18,
@@ -84,18 +95,8 @@ export class InteriorScene {
     this.objectGroup.add(this.player);
 
     this.setupLights();
-
-    this.loader = new GLTFLoader();
-    this.loadAssets();
     this.buildCommanderSet();
     this.buildFallbackObjects();
-
-    window.addEventListener('keydown', this.onKeyDown);
-    window.addEventListener('keyup', this.onKeyUp);
-    window.addEventListener('pointerdown', this.onPointerDown);
-    window.addEventListener('pointermove', this.onPointerMove);
-    window.addEventListener('pointerup', this.onPointerUp);
-    window.addEventListener('wheel', this.onWheel, { passive: false });
   }
 
   render(state: GameState, width: number, height: number): void {
@@ -120,12 +121,6 @@ export class InteriorScene {
   }
 
   dispose(): void {
-    window.removeEventListener('keydown', this.onKeyDown);
-    window.removeEventListener('keyup', this.onKeyUp);
-    window.removeEventListener('pointerdown', this.onPointerDown);
-    window.removeEventListener('pointermove', this.onPointerMove);
-    window.removeEventListener('pointerup', this.onPointerUp);
-    window.removeEventListener('wheel', this.onWheel);
     this.root.clear();
     this.floor.geometry.dispose();
     this.floor.material.dispose();
@@ -208,291 +203,122 @@ export class InteriorScene {
 
   private buildCommanderSet(): void {
     this.commanderGroup.clear();
-    this.debugTargets.length = 0;
-    const chair = this.assets.chair ? this.assets.chair.clone(true) : this.createPlaceholder(0x4064a8);
-    const consoleMain = this.assets.consoleMain
-      ? this.assets.consoleMain.clone(true)
-      : this.createPlaceholder(0x244a6e);
-    const consoleSecondary = this.assets.consoleSecondary
-      ? this.assets.consoleSecondary.clone(true)
-      : this.createPlaceholder(0x1b334d);
-    const prop = this.assets.prop ? this.assets.prop.clone(true) : this.createPlaceholder(0x4a5a68);
-
-    this.normalizeAsset(chair, { x: 1.4, z: 1.4, y: 1.8 });
-    this.normalizeAsset(consoleMain, { x: 4.2, z: 1.8, y: 1.6 });
-    this.normalizeAsset(consoleSecondary, { x: 2.8, z: 1.4, y: 1.4 });
-    this.normalizeAsset(prop, { x: 0.6, z: 0.6, y: 0.6 });
-
     const chairObject = INTERIOR_OBJECTS.find((entry) => entry.type === 'command-chair');
     const chairPos = chairObject ? this.tileToWorld(chairObject.x, chairObject.y) : new THREE.Vector3();
+
+    const chair = this.createCommanderChair();
     chair.position.set(chairPos.x, 0, chairPos.z);
     chair.rotation.y = Math.PI;
+    this.commanderGroup.add(chair);
 
+    const consoleMain = this.createMainConsole();
     consoleMain.position.set(chairPos.x, 0, chairPos.z - TILE_SIZE * 1.3);
     consoleMain.rotation.y = Math.PI;
+    this.commanderGroup.add(consoleMain);
 
+    const consoleSecondary = this.createSecondaryConsole();
     consoleSecondary.position.set(chairPos.x + TILE_SIZE * 1.6, 0, chairPos.z - TILE_SIZE * 0.6);
     consoleSecondary.rotation.y = Math.PI * 0.6;
+    this.commanderGroup.add(consoleSecondary);
 
+    const prop = this.createPropCanteen();
     prop.position.set(chairPos.x + TILE_SIZE * 1.2, 1.0, chairPos.z - TILE_SIZE * 1.1);
-
-    [chair, consoleMain, consoleSecondary, prop].forEach((object) => {
-      object.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-      this.commanderGroup.add(object);
-      this.debugTargets.push(object);
-    });
-
-    this.refreshDebugHelpers();
+    this.commanderGroup.add(prop);
   }
 
-  private createPlaceholder(color: number): THREE.Mesh<THREE.BoxGeometry, THREE.MeshStandardMaterial> {
-    const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.2 })
-    );
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    return mesh;
-  }
+  private createCommanderChair(): THREE.Group {
+    const group = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 0.25, 16), this.darkMetalMaterial);
+    base.position.y = 0.12;
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.55, 12), this.metalMaterial);
+    stem.position.y = 0.52;
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.25, 0.9), this.metalMaterial);
+    seat.position.y = 0.85;
+    const back = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.2, 0.2), this.darkMetalMaterial);
+    back.position.set(0, 1.45, -0.35);
+    back.rotation.x = -0.1;
+    const headrest = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 0.2), this.metalMaterial);
+    headrest.position.set(0, 2.0, -0.38);
+    const armLeft = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.9), this.darkMetalMaterial);
+    armLeft.position.set(-0.65, 1.0, 0);
+    const armRight = armLeft.clone();
+    armRight.position.x = 0.65;
+    const glowStrip = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.05), this.lightStripMaterial);
+    glowStrip.position.set(0, 1.3, -0.6);
 
-  private loadAssets(): void {
-    this.loadAsset('chair', ASSETS.chair);
-    this.loadAsset('consoleMain', ASSETS.consoleMain);
-    this.loadAsset('consoleSecondary', ASSETS.consoleSecondary);
-    this.loadAsset('prop', ASSETS.prop);
-  }
-
-  private loadAsset(name: keyof typeof ASSETS, url: string): void {
-    this.loader.load(this.resolveAssetUrl(url), (gltf: GLTF) => {
-      const primary = this.extractPrimaryObject(gltf.scene);
-      this.assets[name] = primary;
-      this.buildCommanderSet();
-    });
-  }
-
-  private resolveAssetUrl(path: string): string {
-    const baseUrl = (import.meta as ImportMeta).env?.BASE_URL ?? '/';
-    const resolvedBase = baseUrl.startsWith('http')
-      ? baseUrl
-      : new URL(baseUrl, window.location.origin).toString();
-    return new URL(path, resolvedBase).toString();
-  }
-
-  private extractPrimaryObject(root: THREE.Object3D): THREE.Object3D {
-    if (root.children.length <= 1) {
-      return root;
-    }
-    let best: THREE.Object3D = root.children[0];
-    let bestVolume = 0;
-    root.children.forEach((child) => {
-      const box = new THREE.Box3().setFromObject(child);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      const volume = size.x * size.y * size.z;
-      if (volume > bestVolume) {
-        bestVolume = volume;
-        best = child;
+    group.add(base, stem, seat, back, headrest, armLeft, armRight, glowStrip);
+    group.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
       }
     });
-    return best.clone(true);
+    return group;
   }
 
-  private normalizeAsset(
-    object: THREE.Object3D,
-    target: { x: number; z: number; y: number }
-  ): void {
-    const box = new THREE.Box3().setFromObject(object);
-    const size = new THREE.Vector3();
-    box.getSize(size);
-    if (size.x === 0 || size.y === 0 || size.z === 0) {
-      return;
-    }
-    const scale = Math.min(target.x / size.x, target.y / size.y, target.z / size.z);
-    object.scale.setScalar(scale);
-    const scaledBox = new THREE.Box3().setFromObject(object);
-    const center = new THREE.Vector3();
-    scaledBox.getCenter(center);
-    const minY = scaledBox.min.y;
-    object.position.sub(center);
-    object.position.y -= minY;
+  private createMainConsole(): THREE.Group {
+    const group = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.6, 1.6), this.darkMetalMaterial);
+    base.position.y = 0.3;
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.4, 1.2), this.metalMaterial);
+    panel.position.set(0, 0.85, -0.15);
+    panel.rotation.x = -0.2;
+    const screen = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.25, 0.6), this.glassMaterial);
+    screen.position.set(0, 1.1, -0.5);
+    screen.rotation.x = -0.35;
+    const lightStrip = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.08, 0.1), this.lightStripMaterial);
+    lightStrip.position.set(0, 0.7, -0.75);
+    group.add(base, panel, screen, lightStrip);
+    group.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    return group;
+  }
+
+  private createSecondaryConsole(): THREE.Group {
+    const group = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.5, 1.2), this.darkMetalMaterial);
+    base.position.y = 0.25;
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.35, 0.8), this.metalMaterial);
+    panel.position.set(0, 0.7, -0.1);
+    panel.rotation.x = -0.25;
+    const screen = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.2, 0.4), this.glassMaterial);
+    screen.position.set(0, 0.9, -0.35);
+    screen.rotation.x = -0.4;
+    const lightStrip = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.06, 0.08), this.lightStripMaterial);
+    lightStrip.position.set(0, 0.55, -0.55);
+    group.add(base, panel, screen, lightStrip);
+    group.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    return group;
+  }
+
+  private createPropCanteen(): THREE.Group {
+    const group = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.35, 12), this.metalMaterial);
+    body.position.y = 0.18;
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 10), this.accentMaterial);
+    cap.position.y = 0.4;
+    group.add(body, cap);
+    group.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    return group;
   }
 
   private tileToWorld(x: number, y: number): THREE.Vector3 {
     const worldX = -HALF_WIDTH + TILE_SIZE / 2 + x * TILE_SIZE;
     const worldZ = -HALF_DEPTH + TILE_SIZE / 2 + y * TILE_SIZE;
     return new THREE.Vector3(worldX, 0, worldZ);
-  }
-
-  private handleDebugKey(event: KeyboardEvent): void {
-    if (event.code === 'KeyT') {
-      this.debugEnabled = !this.debugEnabled;
-      this.debugSelection = null;
-      this.refreshDebugHelpers();
-      return;
-    }
-
-    if (!this.debugEnabled || !this.debugSelection) {
-      return;
-    }
-
-    if (event.code === 'KeyX') {
-      this.axisLock = this.axisLock === 'x' ? null : 'x';
-      return;
-    }
-
-    if (event.code === 'KeyY') {
-      this.axisLock = this.axisLock === 'y' ? null : 'y';
-      return;
-    }
-
-    if (event.code === 'KeyZ') {
-      this.axisLock = this.axisLock === 'z' ? null : 'z';
-      return;
-    }
-
-    if (event.code === 'KeyP') {
-      this.printDebugTransforms();
-    }
-  }
-
-  private handleDebugKeyUp(event: KeyboardEvent): void {
-    void event;
-  }
-
-  private handlePointerDown(event: PointerEvent): void {
-    if (!this.debugEnabled) {
-      return;
-    }
-    this.updatePointer(event);
-    const hits = this.raycastTargets();
-    if (hits.length === 0) {
-      this.debugSelection = null;
-      this.refreshDebugHelpers();
-      return;
-    }
-
-    this.debugSelection = hits[0].object;
-    this.isDragging = true;
-    this.dragMode = event.shiftKey ? 'rotate' : 'move';
-    this.lastPointer.set(this.pointer.x, this.pointer.y);
-    this.refreshDebugHelpers();
-  }
-
-  private handlePointerMove(event: PointerEvent): void {
-    if (!this.debugEnabled || !this.isDragging || !this.debugSelection) {
-      return;
-    }
-    this.updatePointer(event);
-    const dx = this.pointer.x - this.lastPointer.x;
-    const dy = this.pointer.y - this.lastPointer.y;
-    this.lastPointer.set(this.pointer.x, this.pointer.y);
-
-    if (this.dragMode === 'rotate') {
-      this.debugSelection.rotation.y += dx * Math.PI;
-    } else {
-      const moveX = dx * WORLD_WIDTH * 0.2;
-      const moveZ = dy * WORLD_DEPTH * 0.2;
-      const moveY = -dy * 6;
-      switch (this.axisLock) {
-        case 'x':
-          this.debugSelection.position.x += moveX;
-          break;
-        case 'y':
-          this.debugSelection.position.y += moveY;
-          break;
-        case 'z':
-          this.debugSelection.position.z -= moveZ;
-          break;
-        default:
-          this.debugSelection.position.x += moveX;
-          this.debugSelection.position.z -= moveZ;
-          break;
-      }
-    }
-
-    this.refreshDebugHelpers();
-  }
-
-  private handlePointerUp(): void {
-    if (!this.debugEnabled) {
-      return;
-    }
-    this.isDragging = false;
-  }
-
-  private handleWheel(event: WheelEvent): void {
-    if (!this.debugEnabled || !this.debugSelection) {
-      return;
-    }
-    event.preventDefault();
-    const delta = Math.sign(event.deltaY);
-    const scaleFactor = delta > 0 ? 0.96 : 1.04;
-    this.debugSelection.scale.multiplyScalar(scaleFactor);
-    this.refreshDebugHelpers();
-  }
-
-  private updatePointer(event: PointerEvent): void {
-    this.pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-    this.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
-  }
-
-  private raycastTargets(): THREE.Intersection[] {
-    if (!this.debugSelection && this.debugTargets.length === 0) {
-      return [];
-    }
-    this.raycaster.setFromCamera(this.pointer, this.camera);
-    const meshes: THREE.Object3D[] = [];
-    this.debugTargets.forEach((object) => {
-      object.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          meshes.push(child);
-        }
-      });
-    });
-    return this.raycaster.intersectObjects(meshes, true);
-  }
-
-  private refreshDebugHelpers(): void {
-    if (this.debugBox) {
-      this.debugBox.removeFromParent();
-      this.debugBox.geometry?.dispose?.();
-      this.debugBox = null;
-    }
-    if (this.debugAxes) {
-      this.debugAxes.removeFromParent();
-      this.debugAxes = null;
-    }
-
-    if (!this.debugEnabled || !this.debugSelection) {
-      return;
-    }
-
-    this.debugBox = new THREE.BoxHelper(this.debugSelection, 0x66e0ff);
-    this.debugAxes = new THREE.AxesHelper(1.2);
-    this.debugAxes.position.copy(this.debugSelection.position);
-    this.scene.add(this.debugBox);
-    this.scene.add(this.debugAxes);
-  }
-
-  private printDebugTransforms(): void {
-    const output = this.debugTargets.map((target, index) => {
-      return {
-        index,
-        position: {
-          x: Number(target.position.x.toFixed(3)),
-          y: Number(target.position.y.toFixed(3)),
-          z: Number(target.position.z.toFixed(3))
-        },
-        rotationY: Number(target.rotation.y.toFixed(3)),
-        scale: Number(target.scale.x.toFixed(3))
-      };
-    });
-    // eslint-disable-next-line no-console
-    console.log('[Commander placement]', JSON.stringify(output, null, 2));
   }
 }

@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-// import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-// import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-// import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-// import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import type { GameState } from '../sim/types';
 import { GameMode } from '../sim/modes';
 import { SpaceScene } from './three/SpaceScene';
@@ -20,7 +20,7 @@ export class ThreeRenderer {
   private readonly sectorOverlay: SectorOverlay;
   private readonly container: HTMLElement;
   private readonly resizeObserver: ResizeObserver;
-  // private readonly composer: EffectComposer; // Disabled for debugging
+  private readonly composer: EffectComposer;
   private currentSeed = '';
   private lastMode: GameMode | null = null;
   private sectorClickHandler: ((nodeId: string) => void) | null = null;
@@ -34,7 +34,7 @@ export class ThreeRenderer {
 
   constructor(container: HTMLElement) {
     this.container = container;
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false }); // Enabled antialias since we removed post-proc
+    this.renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false }); // Disable MSAA for post-processing
     this.renderer.setPixelRatio(window.devicePixelRatio || 1);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.shadowMap.enabled = true;
@@ -55,8 +55,7 @@ export class ThreeRenderer {
     this.interiorScene = new InteriorScene();
     this.sectorOverlay = new SectorOverlay();
 
-    /*
-    // --- POST PROCESSING DISABLED FOR DEBUGGING ---
+    // Setup Post-Processing
     this.composer = new EffectComposer(this.renderer);
     const renderPass = new RenderPass(this.interiorScene.scene, this.interiorScene.camera);
     this.composer.addPass(renderPass);
@@ -67,14 +66,14 @@ export class ThreeRenderer {
       0.4,
       0.85
     );
-    bloomPass.threshold = 0.8;
-    bloomPass.strength = 1.2;
+    // Lower threshold so more things glow (helps visibility)
+    bloomPass.threshold = 0.6;
+    bloomPass.strength = 1.0;
     bloomPass.radius = 0.5;
     this.composer.addPass(bloomPass);
 
     const outputPass = new OutputPass();
     this.composer.addPass(outputPass);
-    */
 
     this.resizeObserver = new ResizeObserver(() => this.handleResize());
     this.resizeObserver.observe(container);
@@ -111,19 +110,16 @@ export class ThreeRenderer {
         this.renderer.render(this.sectorOverlay.scene, this.sectorOverlay.camera);
       }
     } else {
-      // Direct Render Fallback
+      // Use Composer for Bloom
       this.interiorScene.render(state, width, height);
-      this.renderer.clear();
-      this.renderer.render(this.interiorScene.scene, this.interiorScene.camera);
 
-      /*
       const renderPass = this.composer.passes[0] as RenderPass;
       renderPass.camera = this.interiorScene.camera;
       renderPass.scene = this.interiorScene.scene;
       renderPass.clearColor = new THREE.Color(AVATAR_BG);
       renderPass.clearAlpha = 1;
+
       this.composer.render();
-      */
     }
   }
 
@@ -150,7 +146,7 @@ export class ThreeRenderer {
     this.spaceScene.dispose();
     this.interiorScene.dispose();
     this.sectorOverlay.dispose();
-    // this.composer.dispose();
+    this.composer.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
@@ -159,9 +155,9 @@ export class ThreeRenderer {
     const width = Math.max(1, this.container.clientWidth);
     const height = Math.max(1, this.container.clientHeight);
     this.renderer.setSize(width, height, false);
-    // if (this.composer) {
-    //   this.composer.setSize(width, height);
-    // }
+    if (this.composer) {
+      this.composer.setSize(width, height);
+    }
   }
 
   private getSectorViewport(): { x: number; y: number; width: number; height: number } | null {

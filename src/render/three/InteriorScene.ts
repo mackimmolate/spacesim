@@ -16,12 +16,12 @@ const HALF_DEPTH = WORLD_DEPTH / 2;
 function createSciFiFloorMap(): THREE.CanvasTexture {
   const size = 1024;
   const texture = createCanvasTexture(size, size, (ctx) => {
-    // Base: Dark tech grey
-    ctx.fillStyle = '#1a1f29';
+    // Base: Lighter tech grey for better visibility
+    ctx.fillStyle = '#2a3038';
     ctx.fillRect(0, 0, size, size);
 
     // Grid lines (subtle)
-    ctx.strokeStyle = '#252e3d';
+    ctx.strokeStyle = '#3a4455';
     ctx.lineWidth = 4;
     const tiles = 8;
     const step = size / tiles;
@@ -36,7 +36,7 @@ function createSciFiFloorMap(): THREE.CanvasTexture {
         ctx.strokeRect(px + 2, py + 2, step - 4, step - 4);
 
         // Tech details in corners
-        ctx.fillStyle = '#2a3545';
+        ctx.fillStyle = '#3a4455';
         ctx.fillRect(px + step * 0.1, py + step * 0.1, step * 0.2, step * 0.05);
         ctx.fillRect(px + step * 0.1, py + step * 0.1, step * 0.05, step * 0.2);
 
@@ -108,8 +108,7 @@ export class InteriorScene {
     // Fog helps hide the edges of the map and adds mood
     this.scene.fog = new THREE.Fog(0x05070a, 20, 60);
 
-    // DEBUG: Camera Far Clip Check
-    this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 500); // Increased Far Plane
+    this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 500);
     this.camera.up.set(0, 0, -1);
 
     this.root = new THREE.Group();
@@ -131,26 +130,26 @@ export class InteriorScene {
     this.materials = {
       floor: new THREE.MeshStandardMaterial({
         map: this.textures.floor,
-        roughness: 0.8, // More matte
-        metalness: 0.1, // Less metallic
-        color: 0xdddddd
+        roughness: 0.9, // Almost fully diffuse
+        metalness: 0.05, // Barely metallic
+        color: 0xeeeeee // Lighter base color
       }),
       wall: new THREE.MeshStandardMaterial({
-        color: 0x2a3038,
-        roughness: 0.5,
-        metalness: 0.1, // Less metallic
+        color: 0x3a4048, // Lighter grey
+        roughness: 0.6,
+        metalness: 0.05,
         normalMap: this.textures.wallNormal,
         normalScale: new THREE.Vector2(0.5, 0.5)
       }),
       metalDark: new THREE.MeshStandardMaterial({
-        color: 0x1a1f29,
-        roughness: 0.4,
-        metalness: 0.3 // Less metallic
+        color: 0x2a2f39,
+        roughness: 0.5,
+        metalness: 0.2
       }),
       metalLight: new THREE.MeshStandardMaterial({
-        color: 0x8a9bb0,
-        roughness: 0.4,
-        metalness: 0.3 // Less metallic
+        color: 0x9aabb0,
+        roughness: 0.5,
+        metalness: 0.2
       }),
       glass: new THREE.MeshPhysicalMaterial({
         color: 0x88ccff,
@@ -170,12 +169,12 @@ export class InteriorScene {
       emissiveBlue: new THREE.MeshStandardMaterial({
         color: 0x000000,
         emissive: 0x00aaff,
-        emissiveIntensity: 2.0 // Bloom food
+        emissiveIntensity: 3.0 // Stronger bloom
       }),
       emissiveOrange: new THREE.MeshStandardMaterial({
         color: 0x000000,
         emissive: 0xffaa00,
-        emissiveIntensity: 2.0 // Bloom food
+        emissiveIntensity: 3.0 // Stronger bloom
       })
     };
 
@@ -218,12 +217,6 @@ export class InteriorScene {
 
     const playerPos = this.tileToWorld(state.player.x, state.player.y);
     this.player.position.set(playerPos.x, 0.75, playerPos.z);
-
-    // console.log('Render Interior:', {
-    //   cam: this.camera.position,
-    //   player: this.player.position,
-    //   aspect, viewSize
-    // });
   }
 
   setEnvironmentMap(environment: THREE.Texture): void {
@@ -239,12 +232,12 @@ export class InteriorScene {
   }
 
   private setupLights(): void {
-    // BOOSTED LIGHTS for no-HDR visibility
-    const ambient = new THREE.AmbientLight(0x1a2433, 1.2); // Much brighter ambient
+    // FLOOD LIGHTS for maximum visibility
+    const ambient = new THREE.AmbientLight(0x2a3443, 3.0); // Very high ambient
     this.scene.add(ambient);
 
     // Main "Sun" or overhead artificial light
-    const keyLight = new THREE.DirectionalLight(0xfff0dd, 1.5);
+    const keyLight = new THREE.DirectionalLight(0xfff0dd, 2.0);
     keyLight.position.set(10, 20, 5);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.set(2048, 2048); // High res shadows
@@ -255,12 +248,13 @@ export class InteriorScene {
     this.scene.add(keyLight);
 
     // Rim light (Blue) for sci-fi contrast
-    const rimLight = new THREE.DirectionalLight(0x0044ff, 0.8);
+    const rimLight = new THREE.DirectionalLight(0x4488ff, 1.2);
     rimLight.position.set(-10, 10, -10);
     this.scene.add(rimLight);
 
     // Fill light (Teal) from below to light up shadows
-    const fillLight = new THREE.HemisphereLight(0x000000, 0x002244, 1.0);
+    // Ground color is bright grey to prevent black undersides
+    const fillLight = new THREE.HemisphereLight(0x444444, 0x222222, 1.5);
     this.scene.add(fillLight);
   }
 

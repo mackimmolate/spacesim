@@ -953,6 +953,8 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
       const candidateKey = state.company.candidates
         .map((candidate) => `${candidate.id}:${candidate.signOnBonus}`)
         .join('|');
+      const hasCandidates = state.company.candidates.length > 0;
+      candidatesSection.section.classList.toggle('is-collapsed', !hasCandidates);
       if (candidateKey !== lastCandidateKey) {
         candidateList.innerHTML = '';
         if (state.company.candidates.length === 0) {
@@ -1060,7 +1062,11 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
       if (!hasEvent) {
         signalTab.classList.remove('is-alert');
       }
-      if (!hasEvent && eventExpanded) {
+      if (eventKey !== lastEventKey) {
+        eventExpanded = hasEvent;
+        eventsPanel.classList.toggle('is-expanded', eventExpanded);
+        eventToggle.textContent = eventExpanded ? 'Collapse All' : 'Expand All';
+      } else if (!hasEvent && eventExpanded) {
         eventExpanded = false;
         eventsPanel.classList.remove('is-expanded');
         eventToggle.textContent = 'Expand All';

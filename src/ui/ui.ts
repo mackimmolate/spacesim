@@ -689,6 +689,7 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     update: (state, engine) => {
       lastState = state;
       currentMode = state.mode;
+      layout.classList.toggle('is-avatar', state.mode === GameMode.Avatar);
       modeIndicator.textContent = state.mode === 'Command' ? 'Command Mode' : 'Avatar Mode';
       modeBanner.textContent =
         state.mode === 'Command'

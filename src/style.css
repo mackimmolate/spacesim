@@ -150,6 +150,47 @@ body {
   grid-template-columns: minmax(260px, 360px) 1fr minmax(320px, 380px);
   gap: var(--ui-gap);
   pointer-events: none;
+  overflow: visible;
+}
+
+.ui-layout.is-avatar {
+  grid-template-columns: minmax(260px, 360px) 1fr 72px;
+}
+
+.ui-layout.is-avatar .ui-column-right {
+  align-items: flex-end;
+  width: 72px;
+  gap: 8px;
+  opacity: 0.72;
+  transition: width 0.25s ease, opacity 0.25s ease;
+}
+
+.ui-layout.is-avatar .ui-column-right > * {
+  width: 72px;
+  transition: width 0.25s ease;
+}
+
+.ui-layout.is-avatar .ui-column-right:hover {
+  width: 320px;
+  opacity: 1;
+}
+
+.ui-layout.is-avatar .ui-column-right:hover > * {
+  width: 320px;
+}
+
+.ui-layout.is-avatar .ui-column-right:not(:hover) .event-panel,
+.ui-layout.is-avatar .ui-column-right:not(:hover) .screen-launch {
+  display: none;
+}
+
+.ui-layout.is-avatar .events-panel {
+  max-height: 64px;
+  padding: 8px;
+}
+
+.ui-layout.is-avatar .quick-panel {
+  padding: 8px;
 }
 
 .ui-column {

@@ -1,12 +1,10 @@
 import { hashSeedToUint32 } from './rng';
-import type { GameState, SimInput, Vec2 } from './types';
+import type { GameState } from './types';
 import { GameMode } from './modes';
 import { createInitialNeeds } from './needs';
 import { generateCandidates } from './crew/generate';
 import { generateSector } from './sector/map';
 import { createInitialFactions } from './factions/factions';
-
-export const DEFAULT_IMPULSE: Vec2 = { x: 0, y: 0 };
 
 export function createInitialState(seed: string): GameState {
   const sector = generateSector(seed);
@@ -67,18 +65,5 @@ export function createInitialState(seed: string): GameState {
       velocity: { x: 0.6, y: 0.2 }
     },
     camera: { x: 0, y: 0, zoom: 1 }
-  };
-}
-
-export function createDefaultInput(): SimInput {
-  return {
-    impulse: { ...DEFAULT_IMPULSE },
-    cameraPan: { x: 0, y: 0 },
-    zoomIn: false,
-    zoomOut: false,
-    resetCamera: false,
-    move: { x: 0, y: 0 },
-    interact: false,
-    exitCommand: false
   };
 }

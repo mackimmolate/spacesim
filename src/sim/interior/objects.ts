@@ -15,10 +15,6 @@ export const INTERIOR_OBJECTS: InteriorObject[] = [
   { id: 'water-01', type: 'water', name: 'Water Dispenser', x: 20, y: 4 }
 ];
 
-export function getObjectAt(x: number, y: number): InteriorObject | undefined {
-  return INTERIOR_OBJECTS.find((object) => object.x === x && object.y === y);
-}
-
 export function getNearbyObject(x: number, y: number): InteriorObject | undefined {
   const options = INTERIOR_OBJECTS.map((object) => ({
     object,

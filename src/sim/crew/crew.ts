@@ -90,14 +90,6 @@ export function applyCrewNeedDelta(
   };
 }
 
-export function updateCrewMember(state: GameState, crewId: string, update: Partial<CrewMember>): GameState {
-  const crew = state.company.crew.map((member) => (member.id === crewId ? { ...member, ...update } : member));
-  return {
-    ...state,
-    company: { ...state.company, crew }
-  };
-}
-
 export function applyCrewSleep(state: GameState): GameState {
   if (state.company.crew.length === 0) {
     return state;

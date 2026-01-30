@@ -8,10 +8,6 @@ export function createInitialFactions(): Faction[] {
   ];
 }
 
-export function getFaction(factions: Faction[], id: string): Faction | undefined {
-  return factions.find((faction) => faction.id === id);
-}
-
 export function updateFactionReputation(factions: Faction[], id: string, delta: number): Faction[] {
   return factions.map((faction) =>
     faction.id === id

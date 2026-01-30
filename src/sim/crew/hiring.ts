@@ -19,13 +19,6 @@ export function regenerateCandidates(state: GameState): GameState {
   };
 }
 
-export function ensureCandidates(state: GameState): GameState {
-  if (state.company.candidates.length > 0) {
-    return state;
-  }
-  return regenerateCandidates(state);
-}
-
 export function hireCandidate(state: GameState, candidateId: string): GameState {
   const candidate = state.company.candidates.find((entry) => entry.id === candidateId);
   if (!candidate) {

@@ -11,7 +11,7 @@ const WORLD_DEPTH = MAP_HEIGHT * TILE_SIZE;
 const HALF_WIDTH = WORLD_WIDTH / 2;
 const HALF_DEPTH = WORLD_DEPTH / 2;
 
-// --- Procedural Generation Helpers (The "Clean" Art Style) ---
+// --- Procedural Generation Helpers (Industrial Grit Art Style) ---
 
 function createSciFiFloorMap(): THREE.CanvasTexture {
   const size = 1024;
@@ -75,98 +75,175 @@ function createSciFiWallNormalMap(): THREE.CanvasTexture {
   return texture;
 }
 
+function fract(value: number): number {
+  return value - Math.floor(value);
+}
+
+function hash2(x: number, y: number): number {
+  return fract(Math.sin(x * 12.9898 + y * 78.233) * 43758.5453);
+}
+
+function hash1(x: number): number {
+  return fract(Math.sin(x * 12.9898) * 43758.5453);
+}
+
 function createConsolePanelMap(variant: 'main' | 'aux'): THREE.CanvasTexture {
   const size = 1024;
   const texture = createCanvasTexture(size, size, (ctx) => {
-    const base = variant === 'main' ? '#1b2430' : '#202836';
-    const line = variant === 'main' ? '#2f3a4b' : '#313c4e';
+    const base = variant === 'main' ? '#20262c' : '#252c34';
+    const panel = variant === 'main' ? '#2a323b' : '#2f3944';
+    const line = variant === 'main' ? '#151a20' : '#181e24';
     const accent = variant === 'main' ? '#2cc0ff' : '#ff9a3d';
+    const hazard = variant === 'main' ? '#d0b24a' : '#c28b2e';
 
     ctx.fillStyle = base;
     ctx.fillRect(0, 0, size, size);
 
-    ctx.strokeStyle = line;
-    ctx.lineWidth = 6;
-    ctx.strokeRect(8, 8, size - 16, size - 16);
+    const cell = 128;
+    ctx.lineWidth = 2;
+    for (let y = 0; y < size; y += cell) {
+      for (let x = 0; x < size; x += cell) {
+        const rnd = hash2(x, y);
+        const inset = 6 + Math.floor(rnd * 12);
+        const shade = Math.floor(50 + rnd * 45);
+        ctx.fillStyle = `rgb(${shade}, ${shade + 6}, ${shade + 12})`;
+        ctx.fillRect(x + inset, y + inset, cell - inset * 2, cell - inset * 2);
+        ctx.strokeStyle = line;
+        ctx.strokeRect(x + inset, y + inset, cell - inset * 2, cell - inset * 2);
 
-    const cols = variant === 'main' ? 5 : 4;
-    const rows = variant === 'main' ? 4 : 3;
-    const pad = 24;
-    const cellW = (size - pad * 2) / cols;
-    const cellH = (size - pad * 2) / rows;
+        ctx.fillStyle = panel;
+        ctx.fillRect(x + inset + 10, y + inset + 10, 26, 8);
+        ctx.fillRect(x + cell - inset - 32, y + inset + 12, 22, 6);
+        ctx.fillRect(x + inset + 12, y + cell - inset - 18, 30, 6);
 
-    ctx.lineWidth = 3;
-    for (let y = 0; y < rows; y += 1) {
-      for (let x = 0; x < cols; x += 1) {
-        const cx = pad + x * cellW;
-        const cy = pad + y * cellH;
-        const inset = 12;
-        ctx.strokeRect(cx + inset, cy + inset, cellW - inset * 2, cellH - inset * 2);
-
-        ctx.fillStyle = '#3a475a';
-        ctx.fillRect(cx + inset, cy + inset, 18, 6);
-        ctx.fillRect(cx + inset, cy + inset, 6, 18);
-        ctx.fillRect(cx + cellW - inset - 18, cy + cellH - inset - 6, 18, 6);
-
-        const clusterX = cx + inset + 10;
-        const clusterY = cy + cellH - inset - 28;
-        for (let i = 0; i < 4; i += 1) {
-          ctx.fillStyle = '#2a3443';
-          ctx.fillRect(clusterX + i * 22, clusterY, 14, 8);
-          ctx.fillStyle = '#3c4b5f';
-          ctx.fillRect(clusterX + i * 22, clusterY + 12, 14, 8);
+        if (rnd > 0.84) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(x + inset, y + inset, cell - inset * 2, cell - inset * 2);
+          ctx.clip();
+          ctx.strokeStyle = hazard;
+          ctx.lineWidth = 6;
+          for (let t = -cell; t < cell * 2; t += 20) {
+            ctx.beginPath();
+            ctx.moveTo(x + t, y);
+            ctx.lineTo(x + t + cell, y + cell);
+            ctx.stroke();
+          }
+          ctx.restore();
         }
+
+        ctx.fillStyle = '#11151a';
+        const bolt = 4;
+        ctx.beginPath();
+        ctx.arc(x + inset + bolt, y + inset + bolt, bolt, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + cell - inset - bolt, y + inset + bolt, bolt, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + inset + bolt, y + cell - inset - bolt, bolt, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + cell - inset - bolt, y + cell - inset - bolt, bolt, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
 
+    ctx.globalAlpha = 0.2;
     ctx.strokeStyle = accent;
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(pad, size * 0.2);
-    ctx.lineTo(size - pad, size * 0.2);
-    ctx.moveTo(pad, size * 0.8);
-    ctx.lineTo(size * 0.65, size * 0.8);
+    ctx.moveTo(size * 0.08, size * 0.25);
+    ctx.lineTo(size * 0.92, size * 0.25);
+    ctx.moveTo(size * 0.08, size * 0.78);
+    ctx.lineTo(size * 0.62, size * 0.78);
     ctx.stroke();
 
-    ctx.globalAlpha = 0.4;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(size * 0.15, size * 0.35);
-    ctx.lineTo(size * 0.35, size * 0.15);
-    ctx.moveTo(size * 0.7, size * 0.9);
-    ctx.lineTo(size * 0.9, size * 0.7);
-    ctx.stroke();
+    ctx.globalAlpha = 0.2;
+    ctx.strokeStyle = '#cfd4da';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 260; i++) {
+      const r1 = hash1(i * 1.31);
+      const r2 = hash1(i * 2.17);
+      const r3 = hash1(i * 3.77);
+      const x = r1 * size;
+      const y = r2 * size;
+      const len = 10 + r3 * 40;
+      const angle = r2 * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#101419';
+    for (let i = 0; i < 180; i++) {
+      const r1 = hash1(i * 4.11);
+      const r2 = hash1(i * 5.31);
+      const w = 6 + r2 * 26;
+      const h = 2 + r1 * 10;
+      ctx.fillRect(r1 * size, r2 * size, w, h);
+    }
     ctx.globalAlpha = 1;
   });
   texture.anisotropy = 4;
   return texture;
 }
 
+function createConsolePanelNormalMap(): THREE.CanvasTexture {
+  const size = 512;
+  const texture = createCanvasTexture(size, size, (ctx) => {
+    ctx.fillStyle = '#8080ff';
+    ctx.fillRect(0, 0, size, size);
+
+    const cell = 64;
+    for (let y = 0; y < size; y += cell) {
+      for (let x = 0; x < size; x += cell) {
+        ctx.fillStyle = '#7070ff';
+        ctx.fillRect(x, y, 2, cell);
+        ctx.fillRect(x, y, cell, 2);
+        ctx.fillStyle = '#9090ff';
+        ctx.fillRect(x + 2, y, 2, cell);
+        ctx.fillRect(x, y + 2, cell, 2);
+
+        ctx.fillStyle = '#9090ff';
+        ctx.beginPath();
+        ctx.arc(x + 6, y + 6, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  });
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(2, 2);
+  return texture;
+}
+
 function createConsoleScreenMap(primary: string, accent: string): THREE.CanvasTexture {
   const size = 512;
   const texture = createCanvasTexture(size, size, (ctx) => {
-    ctx.fillStyle = '#061018';
+    ctx.fillStyle = '#040a10';
     ctx.fillRect(0, 0, size, size);
 
     ctx.strokeStyle = 'rgba(255,255,255,0.08)';
     ctx.lineWidth = 2;
-    for (let i = 0; i <= 8; i += 1) {
-      const pos = (i / 8) * size;
+    for (let i = 0; i <= 10; i += 1) {
+      const pos = (i / 10) * size;
       ctx.beginPath();
-      ctx.moveTo(pos, 24);
-      ctx.lineTo(pos, size - 24);
+      ctx.moveTo(pos, 16);
+      ctx.lineTo(pos, size - 16);
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(24, pos);
-      ctx.lineTo(size - 24, pos);
+      ctx.moveTo(16, pos);
+      ctx.lineTo(size - 16, pos);
       ctx.stroke();
     }
 
     ctx.strokeStyle = primary;
     ctx.lineWidth = 3;
     ctx.beginPath();
-    for (let x = 0; x <= size; x += 12) {
-      const y = size * 0.55 + Math.sin((x / size) * Math.PI * 2) * size * 0.08;
+    for (let x = 0; x <= size; x += 10) {
+      const y = size * 0.52 + Math.sin((x / size) * Math.PI * 2.4) * size * 0.09;
       if (x === 0) {
         ctx.moveTo(x, y);
       } else {
@@ -175,19 +252,28 @@ function createConsoleScreenMap(primary: string, accent: string): THREE.CanvasTe
     }
     ctx.stroke();
 
-    ctx.globalAlpha = 0.7;
-    for (let i = 0; i < 6; i += 1) {
-      const barH = size * (0.15 + (i % 3) * 0.05);
-      const barX = size * 0.1 + i * (size * 0.12);
+    ctx.globalAlpha = 0.8;
+    for (let i = 0; i < 7; i += 1) {
+      const barH = size * (0.12 + (i % 3) * 0.06);
+      const barX = size * 0.08 + i * (size * 0.11);
       ctx.fillStyle = accent;
-      ctx.fillRect(barX, size * 0.78 - barH, size * 0.06, barH);
+      ctx.fillRect(barX, size * 0.8 - barH, size * 0.06, barH);
+      ctx.fillStyle = primary;
+      ctx.fillRect(barX + 10, size * 0.8 - barH - 10, size * 0.03, barH * 0.5);
     }
     ctx.globalAlpha = 1;
 
     ctx.strokeStyle = accent;
     ctx.lineWidth = 2;
-    ctx.strokeRect(size * 0.08, size * 0.08, size * 0.25, size * 0.18);
-    ctx.strokeRect(size * 0.68, size * 0.12, size * 0.22, size * 0.2);
+    ctx.strokeRect(size * 0.08, size * 0.08, size * 0.28, size * 0.2);
+    ctx.strokeRect(size * 0.62, size * 0.12, size * 0.3, size * 0.22);
+
+    ctx.fillStyle = primary;
+    for (let i = 0; i < 10; i += 1) {
+      const r1 = hash1(i * 2.91);
+      const r2 = hash1(i * 5.11);
+      ctx.fillRect(size * (0.12 + r1 * 0.7), size * (0.38 + r2 * 0.18), 10 + r1 * 30, 3);
+    }
   });
   texture.anisotropy = 8;
   return texture;
@@ -205,7 +291,7 @@ export class InteriorScene {
   // NEW: Camera headlight for guaranteed visibility
   private readonly headlight: THREE.DirectionalLight;
 
-  // New Materials (Clean Sci-Fi)
+  // New Materials (Industrial Sci-Fi)
   private readonly materials: {
     floor: THREE.MeshStandardMaterial;
     wall: THREE.MeshStandardMaterial;
@@ -226,6 +312,7 @@ export class InteriorScene {
     wallNormal: THREE.CanvasTexture;
     consolePanelMain: THREE.CanvasTexture;
     consolePanelAlt: THREE.CanvasTexture;
+    consolePanelNormal: THREE.CanvasTexture;
     screenBlue: THREE.CanvasTexture;
     screenAmber: THREE.CanvasTexture;
   };
@@ -258,10 +345,27 @@ export class InteriorScene {
       wallNormal: createSciFiWallNormalMap(),
       consolePanelMain: createConsolePanelMap('main'),
       consolePanelAlt: createConsolePanelMap('aux'),
+      consolePanelNormal: createConsolePanelNormalMap(),
       screenBlue: createConsoleScreenMap('#2cc0ff', '#0b4d7a'),
       screenAmber: createConsoleScreenMap('#ffb347', '#8a4b1a')
     };
     this.textures.floor.colorSpace = THREE.SRGBColorSpace;
+    this.textures.consolePanelMain.colorSpace = THREE.SRGBColorSpace;
+    this.textures.consolePanelAlt.colorSpace = THREE.SRGBColorSpace;
+    this.textures.screenBlue.colorSpace = THREE.SRGBColorSpace;
+    this.textures.screenAmber.colorSpace = THREE.SRGBColorSpace;
+    this.textures.consolePanelMain.magFilter = THREE.LinearFilter;
+    this.textures.consolePanelMain.minFilter = THREE.LinearMipmapLinearFilter;
+    this.textures.consolePanelMain.generateMipmaps = true;
+    this.textures.consolePanelAlt.magFilter = THREE.LinearFilter;
+    this.textures.consolePanelAlt.minFilter = THREE.LinearMipmapLinearFilter;
+    this.textures.consolePanelAlt.generateMipmaps = true;
+    this.textures.screenBlue.magFilter = THREE.LinearFilter;
+    this.textures.screenBlue.minFilter = THREE.LinearMipmapLinearFilter;
+    this.textures.screenBlue.generateMipmaps = true;
+    this.textures.screenAmber.magFilter = THREE.LinearFilter;
+    this.textures.screenAmber.minFilter = THREE.LinearMipmapLinearFilter;
+    this.textures.screenAmber.generateMipmaps = true;
 
     // --- Material Definitions ---
     // NOTE: Lowered metalness and roughness to ensure visibility without Environment Map
@@ -316,12 +420,16 @@ export class InteriorScene {
       }),
       consolePanelMain: new THREE.MeshStandardMaterial({
         map: this.textures.consolePanelMain,
+        normalMap: this.textures.consolePanelNormal,
+        normalScale: new THREE.Vector2(0.6, 0.6),
         roughness: 0.6,
         metalness: 0.25,
         color: 0xffffff
       }),
       consolePanelAlt: new THREE.MeshStandardMaterial({
         map: this.textures.consolePanelAlt,
+        normalMap: this.textures.consolePanelNormal,
+        normalScale: new THREE.Vector2(0.45, 0.45),
         roughness: 0.55,
         metalness: 0.2,
         color: 0xffffff
@@ -476,64 +584,144 @@ export class InteriorScene {
     const chairObject = INTERIOR_OBJECTS.find((entry) => entry.type === 'command-chair');
     const chairPos = chairObject ? this.tileToWorld(chairObject.x, chairObject.y) : new THREE.Vector3();
 
+    const boltGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.05, 8);
+    const knobGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.08, 12);
+    const buttonGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.03, 10);
+    const lightGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.04, 10);
+
+    const addBolt = (target: THREE.Object3D, x: number, y: number, z: number) => {
+      const bolt = new THREE.Mesh(boltGeo, this.materials.metalDark);
+      bolt.position.set(x, y, z);
+      target.add(bolt);
+    };
+
+    const addButton = (
+      target: THREE.Object3D,
+      x: number,
+      y: number,
+      z: number,
+      material: THREE.Material
+    ) => {
+      const button = new THREE.Mesh(buttonGeo, material);
+      button.position.set(x, y, z);
+      target.add(button);
+    };
+
+    const addKnob = (
+      target: THREE.Object3D,
+      x: number,
+      y: number,
+      z: number,
+      material: THREE.Material
+    ) => {
+      const base = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.12, 0.12, 0.04, 12),
+        this.materials.metalLight
+      );
+      base.position.set(x, y, z);
+      const knob = new THREE.Mesh(knobGeo, material);
+      knob.position.set(x, y + 0.05, z);
+      target.add(base, knob);
+    };
+
     // -- The Throne --
     const chair = new THREE.Group();
     chair.position.set(chairPos.x, 0, chairPos.z);
     chair.rotation.y = Math.PI;
 
-    // Base
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.7, 0.3, 16), this.materials.metalDark);
-    base.position.y = 0.15;
-    chair.add(base);
+    const pedestal = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.75, 0.9, 0.25, 24),
+      this.materials.metalDark
+    );
+    pedestal.position.y = 0.12;
+    chair.add(pedestal);
 
-    // Seat
-    const seatGeo = new RoundedBoxGeometry(1.2, 0.3, 1.0, 4, 0.1);
-    const seat = new THREE.Mesh(seatGeo, this.materials.metalLight);
-    seat.position.y = 0.8;
-    chair.add(seat);
+    const baseRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.72, 0.08, 12, 30),
+      this.materials.metalLight
+    );
+    baseRing.rotation.x = Math.PI / 2;
+    baseRing.position.y = 0.22;
+    chair.add(baseRing);
 
-    // High Back
-    const backGeo = new RoundedBoxGeometry(1.0, 1.4, 0.2, 4, 0.05);
-    const back = new THREE.Mesh(backGeo, this.materials.metalDark);
-    back.position.set(0, 1.5, -0.4);
-    back.rotation.x = -0.15;
-    chair.add(back);
+    const seatBase = new THREE.Mesh(
+      new RoundedBoxGeometry(1.35, 0.24, 1.1, 6, 0.1),
+      this.materials.metalDark
+    );
+    seatBase.position.y = 0.55;
+    chair.add(seatBase);
 
-    // Glowing accents on the chair
-    const accentL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.0, 0.05), this.materials.emissiveBlue);
-    accentL.position.set(-0.3, 1.5, -0.28);
-    accentL.rotation.x = -0.15;
+    const seatPad = new THREE.Mesh(
+      new RoundedBoxGeometry(1.15, 0.12, 0.9, 4, 0.08),
+      this.materials.consolePanelAlt
+    );
+    seatPad.position.y = 0.67;
+    chair.add(seatPad);
+
+    const armL = new THREE.Mesh(
+      new RoundedBoxGeometry(0.2, 0.3, 0.9, 4, 0.06),
+      this.materials.metalLight
+    );
+    armL.position.set(-0.65, 0.7, 0);
+    const armR = armL.clone();
+    armR.position.x = 0.65;
+    chair.add(armL, armR);
+
+    const backFrame = new THREE.Mesh(
+      new RoundedBoxGeometry(1.1, 1.5, 0.2, 4, 0.05),
+      this.materials.metalDark
+    );
+    backFrame.position.set(0, 1.35, -0.45);
+    backFrame.rotation.x = -0.12;
+    chair.add(backFrame);
+
+    const headRest = new THREE.Mesh(
+      new RoundedBoxGeometry(0.6, 0.3, 0.2, 4, 0.04),
+      this.materials.consolePanelAlt
+    );
+    headRest.position.set(0, 2.0, -0.52);
+    headRest.rotation.x = -0.12;
+    chair.add(headRest);
+
+    const accentL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.1, 0.06), this.materials.emissiveBlue);
+    accentL.position.set(-0.35, 1.45, -0.32);
+    accentL.rotation.x = -0.12;
     const accentR = accentL.clone();
-    accentR.position.x = 0.3;
+    accentR.position.x = 0.35;
     chair.add(accentL, accentR);
+
+    addBolt(chair, -0.45, 0.72, 0.42);
+    addBolt(chair, 0.45, 0.72, 0.42);
+    addBolt(chair, -0.45, 0.72, -0.35);
+    addBolt(chair, 0.45, 0.72, -0.35);
 
     this.commanderGroup.add(chair);
 
     // -- Command Console Cluster --
     const consoleGroup = new THREE.Group();
-    consoleGroup.position.set(chairPos.x, 0, chairPos.z - TILE_SIZE * 1.7);
+    consoleGroup.position.set(chairPos.x, 0, chairPos.z - TILE_SIZE * 1.6);
     consoleGroup.rotation.y = Math.PI;
     this.commanderGroup.add(consoleGroup);
 
-    const deckWidth = 6.0;
-    const deckDepth = 3.6;
-    const deckBaseHeight = 0.35;
-    const deckTopHeight = 0.08;
-    const deckBase = new THREE.Mesh(
-      new RoundedBoxGeometry(deckWidth, deckBaseHeight, deckDepth, 6, 0.15),
+    const baseWidth = 7.4;
+    const baseDepth = 4.8;
+    const baseHeight = 0.7;
+    const base = new THREE.Mesh(
+      new RoundedBoxGeometry(baseWidth, baseHeight, baseDepth, 8, 0.14),
       this.materials.metalDark
     );
-    deckBase.position.y = deckBaseHeight / 2;
-    consoleGroup.add(deckBase);
+    base.position.y = baseHeight / 2;
+    consoleGroup.add(base);
 
-    const deckTop = new THREE.Mesh(
-      new RoundedBoxGeometry(deckWidth - 0.4, deckTopHeight, deckDepth - 0.4, 6, 0.12),
+    const deckHeight = 0.18;
+    const deck = new THREE.Mesh(
+      new RoundedBoxGeometry(baseWidth - 0.6, deckHeight, baseDepth - 0.6, 8, 0.12),
       this.materials.consolePanelMain
     );
-    deckTop.position.y = deckBaseHeight + deckTopHeight / 2;
-    consoleGroup.add(deckTop);
+    deck.position.y = baseHeight + deckHeight / 2;
+    consoleGroup.add(deck);
 
-    const deckSurfaceY = deckBaseHeight + deckTopHeight + 0.01;
+    const deckSurfaceY = baseHeight + deckHeight + 0.02;
 
     const addPanel = (
       width: number,
@@ -544,15 +732,15 @@ export class InteriorScene {
       lift = 0
     ) => {
       const panel = new THREE.Mesh(
-        new RoundedBoxGeometry(width, 0.05, depth, 3, 0.04),
+        new RoundedBoxGeometry(width, 0.06, depth, 2, 0.03),
         material
       );
-      panel.position.set(x, deckSurfaceY + lift + 0.035, z);
+      panel.position.set(x, deckSurfaceY + lift + 0.03, z);
       consoleGroup.add(panel);
       return panel;
     };
 
-    const addScreen = (
+    const addScreenTop = (
       width: number,
       depth: number,
       x: number,
@@ -562,111 +750,153 @@ export class InteriorScene {
     ) => {
       const screen = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), material);
       screen.rotation.x = -Math.PI / 2;
-      screen.position.set(x, deckSurfaceY + lift + 0.06, z);
+      screen.position.set(x, deckSurfaceY + lift + 0.08, z);
       consoleGroup.add(screen);
       return screen;
     };
 
-    const addButtonGrid = (
-      cols: number,
-      rows: number,
-      startX: number,
-      startZ: number,
-      spacing: number,
-      material: THREE.Material,
-      lift = 0
-    ) => {
-      for (let row = 0; row < rows; row += 1) {
-        for (let col = 0; col < cols; col += 1) {
-          const button = new THREE.Mesh(
-            new THREE.BoxGeometry(0.08, 0.03, 0.08),
-            material
-          );
-          button.position.set(
-            startX + col * spacing,
-            deckSurfaceY + lift + 0.05,
-            startZ + row * spacing
-          );
-          consoleGroup.add(button);
-        }
-      }
-    };
-
-    const addKnob = (x: number, z: number, material: THREE.Material, lift = 0) => {
-      const base = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.12, 0.12, 0.04, 16),
-        this.materials.metalLight
-      );
-      base.position.set(x, deckSurfaceY + lift + 0.04, z);
-      const knob = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.05, 0.05, 0.08, 16),
-        material
-      );
-      knob.position.set(x, deckSurfaceY + lift + 0.09, z);
-      consoleGroup.add(base, knob);
-    };
-
-    const addLightStrip = (
-      width: number,
-      x: number,
-      z: number,
-      material: THREE.Material,
-      lift = 0
-    ) => {
-      const strip = new THREE.Mesh(new THREE.BoxGeometry(width, 0.04, 0.08), material);
-      strip.position.set(x, deckSurfaceY + lift + 0.04, z);
-      consoleGroup.add(strip);
-    };
-
-    const frontLip = new THREE.Mesh(
-      new RoundedBoxGeometry(deckWidth - 0.6, 0.15, 0.35, 4, 0.08),
+    const rimHeight = 0.12;
+    const rimThickness = 0.22;
+    const rimZ = baseDepth / 2 - rimThickness / 2;
+    const rimX = baseWidth / 2 - rimThickness / 2;
+    const rimFront = new THREE.Mesh(
+      new RoundedBoxGeometry(baseWidth - 0.4, rimHeight, rimThickness, 4, 0.06),
       this.materials.metalLight
     );
-    frontLip.position.set(0, deckSurfaceY + 0.07, -deckDepth / 2 + 0.2);
-    consoleGroup.add(frontLip);
-    addLightStrip(deckWidth - 1.2, 0, -deckDepth / 2 + 0.02, this.materials.emissiveOrange);
+    rimFront.position.set(0, baseHeight + rimHeight / 2 + 0.02, -rimZ);
+    const rimBack = rimFront.clone();
+    rimBack.position.z = rimZ;
+    const rimLeft = new THREE.Mesh(
+      new RoundedBoxGeometry(rimThickness, rimHeight, baseDepth - 0.4, 4, 0.06),
+      this.materials.metalLight
+    );
+    rimLeft.position.set(-rimX, baseHeight + rimHeight / 2 + 0.02, 0);
+    const rimRight = rimLeft.clone();
+    rimRight.position.x = rimX;
+    consoleGroup.add(rimFront, rimBack, rimLeft, rimRight);
 
-    const coreHeight = 0.32;
-    const coreBase = new THREE.Mesh(
-      new RoundedBoxGeometry(2.8, coreHeight, 1.6, 4, 0.1),
+    const trenchL = new THREE.Mesh(
+      new RoundedBoxGeometry(0.5, 0.12, baseDepth - 1.2, 4, 0.06),
+      this.materials.consolePanelAlt
+    );
+    trenchL.position.set(-2.6, deckSurfaceY + 0.06, 0);
+    const trenchR = trenchL.clone();
+    trenchR.position.x = 2.6;
+    consoleGroup.add(trenchL, trenchR);
+
+    const frontZ = -baseDepth / 2 + 0.65;
+    addPanel(5.6, 0.75, 0, frontZ, this.materials.consolePanelAlt);
+    for (let i = 0; i < 16; i += 1) {
+      const x = -2.8 + i * 0.38;
+      addButton(consoleGroup, x, deckSurfaceY + 0.06, frontZ + 0.05, this.materials.emissiveOrange);
+    }
+
+    const coreHeight = 0.7;
+    const core = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.2, 1.5, coreHeight, 28),
       this.materials.metalDark
     );
-    coreBase.position.set(0, deckSurfaceY + coreHeight / 2, -0.6);
-    consoleGroup.add(coreBase);
-    addPanel(2.6, 1.4, 0, -0.6, this.materials.consolePanelMain, coreHeight + 0.02);
-    addScreen(1.6, 0.9, 0, -0.55, this.materials.screenBlue, coreHeight + 0.05);
-    addScreen(0.7, 0.5, -0.85, -0.2, this.materials.screenAmber, coreHeight + 0.05);
-    addScreen(0.7, 0.5, 0.85, -0.2, this.materials.screenAmber, coreHeight + 0.05);
+    core.position.set(0, deckSurfaceY + coreHeight / 2, -0.2);
+    consoleGroup.add(core);
 
-    const podHeight = 0.28;
+    addPanel(2.8, 1.7, 0, -0.2, this.materials.consolePanelMain, coreHeight * 0.55);
+    addScreenTop(1.7, 0.95, 0, -0.2, this.materials.screenBlue, coreHeight * 0.75);
+
+    for (let i = 0; i < 18; i += 1) {
+      const angle = (i / 18) * Math.PI * 2;
+      const radius = 1.65;
+      const light = new THREE.Mesh(
+        lightGeo,
+        i % 2 === 0 ? this.materials.emissiveBlue : this.materials.emissiveOrange
+      );
+      light.position.set(
+        Math.cos(angle) * radius,
+        deckSurfaceY + 0.05,
+        Math.sin(angle) * radius - 0.2
+      );
+      consoleGroup.add(light);
+    }
+
+    const podHeight = 0.3;
     const leftPod = new THREE.Mesh(
-      new RoundedBoxGeometry(1.9, podHeight, 1.6, 4, 0.1),
+      new RoundedBoxGeometry(2.1, podHeight, 1.9, 4, 0.1),
       this.materials.metalDark
     );
-    leftPod.position.set(-2.1, deckSurfaceY + podHeight / 2, -0.2);
+    leftPod.position.set(-2.4, deckSurfaceY + podHeight / 2, -0.1);
     consoleGroup.add(leftPod);
-    addPanel(1.7, 1.4, -2.1, -0.2, this.materials.consolePanelAlt, podHeight + 0.02);
-    addScreen(0.7, 0.45, -2.1, 0.15, this.materials.screenAmber, podHeight + 0.05);
-    addButtonGrid(4, 3, -2.6, -0.6, 0.14, this.materials.emissiveBlue, podHeight + 0.02);
-    addKnob(-1.55, -0.75, this.materials.emissiveOrange, podHeight + 0.02);
+    addPanel(1.9, 1.6, -2.4, -0.1, this.materials.consolePanelAlt, podHeight + 0.02);
+    addScreenTop(0.8, 0.5, -2.4, 0.3, this.materials.screenAmber, podHeight + 0.05);
+    addKnob(consoleGroup, -1.65, deckSurfaceY + 0.06, -0.9, this.materials.emissiveOrange);
 
     const rightPod = new THREE.Mesh(
-      new RoundedBoxGeometry(1.9, podHeight, 1.6, 4, 0.1),
+      new RoundedBoxGeometry(2.1, podHeight, 1.9, 4, 0.1),
       this.materials.metalDark
     );
-    rightPod.position.set(2.1, deckSurfaceY + podHeight / 2, -0.2);
+    rightPod.position.set(2.4, deckSurfaceY + podHeight / 2, -0.1);
     consoleGroup.add(rightPod);
-    addPanel(1.7, 1.4, 2.1, -0.2, this.materials.consolePanelAlt, podHeight + 0.02);
-    addScreen(0.7, 0.45, 2.1, 0.15, this.materials.screenAmber, podHeight + 0.05);
-    addButtonGrid(4, 3, 1.55, -0.6, 0.14, this.materials.emissiveBlue, podHeight + 0.02);
-    addKnob(2.65, -0.75, this.materials.emissiveOrange, podHeight + 0.02);
+    addPanel(1.9, 1.6, 2.4, -0.1, this.materials.consolePanelAlt, podHeight + 0.02);
+    addScreenTop(0.8, 0.5, 2.4, 0.3, this.materials.screenAmber, podHeight + 0.05);
+    addKnob(consoleGroup, 1.65, deckSurfaceY + 0.06, -0.9, this.materials.emissiveOrange);
 
-    addPanel(4.8, 0.7, 0, 1.1, this.materials.consolePanelAlt);
-    addLightStrip(3.4, 0, 1.35, this.materials.emissiveBlue);
+    for (let i = 0; i < 4; i += 1) {
+      const x = -2.8 + i * 0.9;
+      addKnob(consoleGroup, x, deckSurfaceY + 0.06, 0.95, this.materials.emissiveBlue);
+    }
 
-    const holoRing = new THREE.Mesh(new THREE.RingGeometry(0.4, 0.6, 32), this.materials.hologram);
+    for (let x = -2.8; x <= 2.8; x += 1.2) {
+      for (let z = -1.4; z <= 1.4; z += 0.8) {
+        const radius = Math.hypot(x, z + 0.2);
+        if (radius < 1.5) {
+          continue;
+        }
+        const material =
+          (Math.round((x + 3) / 1.2) + Math.round((z + 2) / 0.8)) % 2 === 0
+            ? this.materials.consolePanelMain
+            : this.materials.consolePanelAlt;
+        addPanel(0.95, 0.6, x, z, material);
+      }
+    }
+
+    const towerPositions = [
+      { x: -1.6, z: 1.35, mat: this.materials.screenBlue },
+      { x: 0, z: 1.5, mat: this.materials.screenAmber },
+      { x: 1.6, z: 1.35, mat: this.materials.screenBlue }
+    ];
+    towerPositions.forEach((entry) => {
+      const tower = new THREE.Mesh(
+        new RoundedBoxGeometry(1.1, 0.7, 0.7, 4, 0.08),
+        this.materials.metalDark
+      );
+      tower.position.set(entry.x, deckSurfaceY + 0.35, entry.z);
+      consoleGroup.add(tower);
+      addScreenTop(0.9, 0.5, entry.x, entry.z, entry.mat, 0.65);
+    });
+
+    const pipe = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.07, 0.07, baseDepth - 1.4, 10),
+      this.materials.metalDark
+    );
+    pipe.rotation.z = Math.PI / 2;
+    pipe.position.set(-3.25, deckSurfaceY + 0.18, 0);
+    const pipeR = pipe.clone();
+    pipeR.position.x = 3.25;
+    consoleGroup.add(pipe, pipeR);
+
+    for (let i = 0; i < 20; i += 1) {
+      const angle = (i / 20) * Math.PI * 2;
+      const radius = 3.5;
+      const light = new THREE.Mesh(lightGeo, this.materials.emissiveBlue);
+      light.position.set(
+        Math.cos(angle) * radius,
+        0.06,
+        Math.sin(angle) * radius - 0.2
+      );
+      consoleGroup.add(light);
+    }
+
+    const holoRing = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.75, 32), this.materials.hologram);
     holoRing.rotation.x = -Math.PI / 2;
-    holoRing.position.set(0, deckSurfaceY + 0.2, 0.4);
+    holoRing.position.set(0, deckSurfaceY + 0.35, 0.45);
     consoleGroup.add(holoRing);
 
     // Set shadows for everything in commander group

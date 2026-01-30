@@ -75,6 +75,124 @@ function createSciFiWallNormalMap(): THREE.CanvasTexture {
   return texture;
 }
 
+function createConsolePanelMap(variant: 'main' | 'aux'): THREE.CanvasTexture {
+  const size = 1024;
+  const texture = createCanvasTexture(size, size, (ctx) => {
+    const base = variant === 'main' ? '#1b2430' : '#202836';
+    const line = variant === 'main' ? '#2f3a4b' : '#313c4e';
+    const accent = variant === 'main' ? '#2cc0ff' : '#ff9a3d';
+
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, size, size);
+
+    ctx.strokeStyle = line;
+    ctx.lineWidth = 6;
+    ctx.strokeRect(8, 8, size - 16, size - 16);
+
+    const cols = variant === 'main' ? 5 : 4;
+    const rows = variant === 'main' ? 4 : 3;
+    const pad = 24;
+    const cellW = (size - pad * 2) / cols;
+    const cellH = (size - pad * 2) / rows;
+
+    ctx.lineWidth = 3;
+    for (let y = 0; y < rows; y += 1) {
+      for (let x = 0; x < cols; x += 1) {
+        const cx = pad + x * cellW;
+        const cy = pad + y * cellH;
+        const inset = 12;
+        ctx.strokeRect(cx + inset, cy + inset, cellW - inset * 2, cellH - inset * 2);
+
+        ctx.fillStyle = '#3a475a';
+        ctx.fillRect(cx + inset, cy + inset, 18, 6);
+        ctx.fillRect(cx + inset, cy + inset, 6, 18);
+        ctx.fillRect(cx + cellW - inset - 18, cy + cellH - inset - 6, 18, 6);
+
+        const clusterX = cx + inset + 10;
+        const clusterY = cy + cellH - inset - 28;
+        for (let i = 0; i < 4; i += 1) {
+          ctx.fillStyle = '#2a3443';
+          ctx.fillRect(clusterX + i * 22, clusterY, 14, 8);
+          ctx.fillStyle = '#3c4b5f';
+          ctx.fillRect(clusterX + i * 22, clusterY + 12, 14, 8);
+        }
+      }
+    }
+
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(pad, size * 0.2);
+    ctx.lineTo(size - pad, size * 0.2);
+    ctx.moveTo(pad, size * 0.8);
+    ctx.lineTo(size * 0.65, size * 0.8);
+    ctx.stroke();
+
+    ctx.globalAlpha = 0.4;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(size * 0.15, size * 0.35);
+    ctx.lineTo(size * 0.35, size * 0.15);
+    ctx.moveTo(size * 0.7, size * 0.9);
+    ctx.lineTo(size * 0.9, size * 0.7);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  });
+  texture.anisotropy = 4;
+  return texture;
+}
+
+function createConsoleScreenMap(primary: string, accent: string): THREE.CanvasTexture {
+  const size = 512;
+  const texture = createCanvasTexture(size, size, (ctx) => {
+    ctx.fillStyle = '#061018';
+    ctx.fillRect(0, 0, size, size);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i <= 8; i += 1) {
+      const pos = (i / 8) * size;
+      ctx.beginPath();
+      ctx.moveTo(pos, 24);
+      ctx.lineTo(pos, size - 24);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(24, pos);
+      ctx.lineTo(size - 24, pos);
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = primary;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let x = 0; x <= size; x += 12) {
+      const y = size * 0.55 + Math.sin((x / size) * Math.PI * 2) * size * 0.08;
+      if (x === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
+
+    ctx.globalAlpha = 0.7;
+    for (let i = 0; i < 6; i += 1) {
+      const barH = size * (0.15 + (i % 3) * 0.05);
+      const barX = size * 0.1 + i * (size * 0.12);
+      ctx.fillStyle = accent;
+      ctx.fillRect(barX, size * 0.78 - barH, size * 0.06, barH);
+    }
+    ctx.globalAlpha = 1;
+
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(size * 0.08, size * 0.08, size * 0.25, size * 0.18);
+    ctx.strokeRect(size * 0.68, size * 0.12, size * 0.22, size * 0.2);
+  });
+  texture.anisotropy = 8;
+  return texture;
+}
+
 export class InteriorScene {
   readonly scene: THREE.Scene;
   readonly camera: THREE.OrthographicCamera;
@@ -97,11 +215,19 @@ export class InteriorScene {
     hologram: THREE.MeshBasicMaterial; // For unlit glowing parts
     emissiveBlue: THREE.MeshStandardMaterial;
     emissiveOrange: THREE.MeshStandardMaterial;
+    consolePanelMain: THREE.MeshStandardMaterial;
+    consolePanelAlt: THREE.MeshStandardMaterial;
+    screenBlue: THREE.MeshStandardMaterial;
+    screenAmber: THREE.MeshStandardMaterial;
   };
 
   private readonly textures: {
     floor: THREE.CanvasTexture;
     wallNormal: THREE.CanvasTexture;
+    consolePanelMain: THREE.CanvasTexture;
+    consolePanelAlt: THREE.CanvasTexture;
+    screenBlue: THREE.CanvasTexture;
+    screenAmber: THREE.CanvasTexture;
   };
 
   constructor() {
@@ -129,7 +255,11 @@ export class InteriorScene {
     // --- Asset Generation ---
     this.textures = {
       floor: createSciFiFloorMap(),
-      wallNormal: createSciFiWallNormalMap()
+      wallNormal: createSciFiWallNormalMap(),
+      consolePanelMain: createConsolePanelMap('main'),
+      consolePanelAlt: createConsolePanelMap('aux'),
+      screenBlue: createConsoleScreenMap('#2cc0ff', '#0b4d7a'),
+      screenAmber: createConsoleScreenMap('#ffb347', '#8a4b1a')
     };
     this.textures.floor.colorSpace = THREE.SRGBColorSpace;
 
@@ -183,6 +313,34 @@ export class InteriorScene {
         color: 0x000000,
         emissive: 0xffaa00,
         emissiveIntensity: 3.0 // Stronger bloom
+      }),
+      consolePanelMain: new THREE.MeshStandardMaterial({
+        map: this.textures.consolePanelMain,
+        roughness: 0.6,
+        metalness: 0.25,
+        color: 0xffffff
+      }),
+      consolePanelAlt: new THREE.MeshStandardMaterial({
+        map: this.textures.consolePanelAlt,
+        roughness: 0.55,
+        metalness: 0.2,
+        color: 0xffffff
+      }),
+      screenBlue: new THREE.MeshStandardMaterial({
+        map: this.textures.screenBlue,
+        emissiveMap: this.textures.screenBlue,
+        emissive: 0x2aa9ff,
+        emissiveIntensity: 2.2,
+        roughness: 0.2,
+        metalness: 0.0
+      }),
+      screenAmber: new THREE.MeshStandardMaterial({
+        map: this.textures.screenAmber,
+        emissiveMap: this.textures.screenAmber,
+        emissive: 0xffa244,
+        emissiveIntensity: 2.0,
+        roughness: 0.25,
+        metalness: 0.0
       })
     };
 
@@ -351,39 +509,165 @@ export class InteriorScene {
 
     this.commanderGroup.add(chair);
 
-    // -- Main Console --
+    // -- Command Console Cluster --
     const consoleGroup = new THREE.Group();
-    consoleGroup.position.set(chairPos.x, 0, chairPos.z - TILE_SIZE * 1.5);
+    consoleGroup.position.set(chairPos.x, 0, chairPos.z - TILE_SIZE * 1.7);
     consoleGroup.rotation.y = Math.PI;
-
-    // Desk body
-    const deskGeo = new RoundedBoxGeometry(4.0, 0.8, 1.5, 4, 0.1);
-    const desk = new THREE.Mesh(deskGeo, this.materials.metalDark);
-    desk.position.y = 0.4;
-    consoleGroup.add(desk);
-
-    // Angled Top Surface
-    const topGeo = new RoundedBoxGeometry(3.8, 0.1, 1.2, 2, 0.02);
-    const top = new THREE.Mesh(topGeo, this.materials.metalLight);
-    top.position.set(0, 0.85, 0);
-    top.rotation.x = -0.1;
-    consoleGroup.add(top);
-
-    // Holographic Screen (Large)
-    const holoGeo = new THREE.PlaneGeometry(3.0, 1.5);
-    const holo = new THREE.Mesh(holoGeo, this.materials.hologram);
-    holo.position.set(0, 1.8, -0.2);
-    holo.rotation.x = -0.1;
-    consoleGroup.add(holo);
-
-    // Keyboard / Button panel (Glowing)
-    const keysGeo = new THREE.BoxGeometry(2.0, 0.05, 0.4);
-    const keys = new THREE.Mesh(keysGeo, this.materials.emissiveBlue);
-    keys.position.set(0, 0.9, 0.2);
-    keys.rotation.x = -0.1;
-    consoleGroup.add(keys);
-
     this.commanderGroup.add(consoleGroup);
+
+    const deckWidth = 6.0;
+    const deckDepth = 3.6;
+    const deckBaseHeight = 0.35;
+    const deckTopHeight = 0.08;
+    const deckBase = new THREE.Mesh(
+      new RoundedBoxGeometry(deckWidth, deckBaseHeight, deckDepth, 6, 0.15),
+      this.materials.metalDark
+    );
+    deckBase.position.y = deckBaseHeight / 2;
+    consoleGroup.add(deckBase);
+
+    const deckTop = new THREE.Mesh(
+      new RoundedBoxGeometry(deckWidth - 0.4, deckTopHeight, deckDepth - 0.4, 6, 0.12),
+      this.materials.consolePanelMain
+    );
+    deckTop.position.y = deckBaseHeight + deckTopHeight / 2;
+    consoleGroup.add(deckTop);
+
+    const deckSurfaceY = deckBaseHeight + deckTopHeight + 0.01;
+
+    const addPanel = (
+      width: number,
+      depth: number,
+      x: number,
+      z: number,
+      material: THREE.Material,
+      lift = 0
+    ) => {
+      const panel = new THREE.Mesh(
+        new RoundedBoxGeometry(width, 0.05, depth, 3, 0.04),
+        material
+      );
+      panel.position.set(x, deckSurfaceY + lift + 0.035, z);
+      consoleGroup.add(panel);
+      return panel;
+    };
+
+    const addScreen = (
+      width: number,
+      depth: number,
+      x: number,
+      z: number,
+      material: THREE.Material,
+      lift = 0
+    ) => {
+      const screen = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), material);
+      screen.rotation.x = -Math.PI / 2;
+      screen.position.set(x, deckSurfaceY + lift + 0.06, z);
+      consoleGroup.add(screen);
+      return screen;
+    };
+
+    const addButtonGrid = (
+      cols: number,
+      rows: number,
+      startX: number,
+      startZ: number,
+      spacing: number,
+      material: THREE.Material,
+      lift = 0
+    ) => {
+      for (let row = 0; row < rows; row += 1) {
+        for (let col = 0; col < cols; col += 1) {
+          const button = new THREE.Mesh(
+            new THREE.BoxGeometry(0.08, 0.03, 0.08),
+            material
+          );
+          button.position.set(
+            startX + col * spacing,
+            deckSurfaceY + lift + 0.05,
+            startZ + row * spacing
+          );
+          consoleGroup.add(button);
+        }
+      }
+    };
+
+    const addKnob = (x: number, z: number, material: THREE.Material, lift = 0) => {
+      const base = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.12, 0.12, 0.04, 16),
+        this.materials.metalLight
+      );
+      base.position.set(x, deckSurfaceY + lift + 0.04, z);
+      const knob = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.05, 0.08, 16),
+        material
+      );
+      knob.position.set(x, deckSurfaceY + lift + 0.09, z);
+      consoleGroup.add(base, knob);
+    };
+
+    const addLightStrip = (
+      width: number,
+      x: number,
+      z: number,
+      material: THREE.Material,
+      lift = 0
+    ) => {
+      const strip = new THREE.Mesh(new THREE.BoxGeometry(width, 0.04, 0.08), material);
+      strip.position.set(x, deckSurfaceY + lift + 0.04, z);
+      consoleGroup.add(strip);
+    };
+
+    const frontLip = new THREE.Mesh(
+      new RoundedBoxGeometry(deckWidth - 0.6, 0.15, 0.35, 4, 0.08),
+      this.materials.metalLight
+    );
+    frontLip.position.set(0, deckSurfaceY + 0.07, -deckDepth / 2 + 0.2);
+    consoleGroup.add(frontLip);
+    addLightStrip(deckWidth - 1.2, 0, -deckDepth / 2 + 0.02, this.materials.emissiveOrange);
+
+    const coreHeight = 0.32;
+    const coreBase = new THREE.Mesh(
+      new RoundedBoxGeometry(2.8, coreHeight, 1.6, 4, 0.1),
+      this.materials.metalDark
+    );
+    coreBase.position.set(0, deckSurfaceY + coreHeight / 2, -0.6);
+    consoleGroup.add(coreBase);
+    addPanel(2.6, 1.4, 0, -0.6, this.materials.consolePanelMain, coreHeight + 0.02);
+    addScreen(1.6, 0.9, 0, -0.55, this.materials.screenBlue, coreHeight + 0.05);
+    addScreen(0.7, 0.5, -0.85, -0.2, this.materials.screenAmber, coreHeight + 0.05);
+    addScreen(0.7, 0.5, 0.85, -0.2, this.materials.screenAmber, coreHeight + 0.05);
+
+    const podHeight = 0.28;
+    const leftPod = new THREE.Mesh(
+      new RoundedBoxGeometry(1.9, podHeight, 1.6, 4, 0.1),
+      this.materials.metalDark
+    );
+    leftPod.position.set(-2.1, deckSurfaceY + podHeight / 2, -0.2);
+    consoleGroup.add(leftPod);
+    addPanel(1.7, 1.4, -2.1, -0.2, this.materials.consolePanelAlt, podHeight + 0.02);
+    addScreen(0.7, 0.45, -2.1, 0.15, this.materials.screenAmber, podHeight + 0.05);
+    addButtonGrid(4, 3, -2.6, -0.6, 0.14, this.materials.emissiveBlue, podHeight + 0.02);
+    addKnob(-1.55, -0.75, this.materials.emissiveOrange, podHeight + 0.02);
+
+    const rightPod = new THREE.Mesh(
+      new RoundedBoxGeometry(1.9, podHeight, 1.6, 4, 0.1),
+      this.materials.metalDark
+    );
+    rightPod.position.set(2.1, deckSurfaceY + podHeight / 2, -0.2);
+    consoleGroup.add(rightPod);
+    addPanel(1.7, 1.4, 2.1, -0.2, this.materials.consolePanelAlt, podHeight + 0.02);
+    addScreen(0.7, 0.45, 2.1, 0.15, this.materials.screenAmber, podHeight + 0.05);
+    addButtonGrid(4, 3, 1.55, -0.6, 0.14, this.materials.emissiveBlue, podHeight + 0.02);
+    addKnob(2.65, -0.75, this.materials.emissiveOrange, podHeight + 0.02);
+
+    addPanel(4.8, 0.7, 0, 1.1, this.materials.consolePanelAlt);
+    addLightStrip(3.4, 0, 1.35, this.materials.emissiveBlue);
+
+    const holoRing = new THREE.Mesh(new THREE.RingGeometry(0.4, 0.6, 32), this.materials.hologram);
+    holoRing.rotation.x = -Math.PI / 2;
+    holoRing.position.set(0, deckSurfaceY + 0.2, 0.4);
+    consoleGroup.add(holoRing);
 
     // Set shadows for everything in commander group
     this.commanderGroup.traverse((obj) => {

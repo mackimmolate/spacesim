@@ -18,6 +18,16 @@ const IMPULSE_SCALE = 0.4;
 const DRIFT_ACCEL = 0.12;
 const MAX_SPEED = 2.5;
 export const MOVE_INTERVAL = 0.18;
+const IDLE_INPUT: SimInput = {
+  impulse: { x: 0, y: 0 },
+  cameraPan: { x: 0, y: 0 },
+  zoomIn: false,
+  zoomOut: false,
+  resetCamera: false,
+  move: { x: 0, y: 0 },
+  interact: false,
+  exitCommand: false
+};
 
 function normalizeMoveInput(move: Vec2): Vec2 {
   const x = Math.sign(move.x);
@@ -37,7 +47,23 @@ function clampVec(vec: Vec2, max: number): Vec2 {
   return { x: vec.x * scale, y: vec.y * scale };
 }
 
+function fastForwardState(state: GameState, seconds: number, dt: number): GameState {
+  if (seconds <= 0) {
+    return state;
+  }
+  const ticks = Math.max(0, Math.ceil(seconds / dt));
+  let nextState = state;
+  for (let i = 0; i < ticks; i += 1) {
+    nextState = stepState(nextState, dt, IDLE_INPUT);
+  }
+  return nextState;
+}
+
 export function advanceState(state: GameState, dt: number, input: SimInput): GameState {
+  return stepState(state, dt, input);
+}
+
+function stepState(state: GameState, dt: number, input: SimInput): GameState {
   const efficiency = computeOpsEfficiency(state.company.crew);
   const noiseX = nextRng(state.rngState);
   const noiseY = nextRng(noiseX.nextState);
@@ -274,7 +300,11 @@ export function advanceState(state: GameState, dt: number, input: SimInput): Gam
     };
 
     if (input.interact) {
-      nextState = handleInteriorInteraction(nextState);
+      const interaction = handleInteriorInteraction(nextState);
+      nextState = interaction.state;
+      if (interaction.fastForwardSeconds) {
+        nextState = fastForwardState(nextState, interaction.fastForwardSeconds, dt);
+      }
     }
   } else if (state.mode === GameMode.Command && input.exitCommand) {
     nextState = {

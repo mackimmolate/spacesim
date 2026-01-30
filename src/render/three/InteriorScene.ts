@@ -3,7 +3,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import type { GameState } from '../../sim/types';
 import { MAP_HEIGHT, MAP_WIDTH } from '../../sim/interior/map';
 import { INTERIOR_OBJECTS } from '../../sim/interior/objects';
-import { createCanvasTexture } from './utils';
+import { createCanvasTexture, disposeObject3D } from './utils';
 
 const TILE_SIZE = 1.6;
 const WORLD_WIDTH = MAP_WIDTH * TILE_SIZE;
@@ -235,10 +235,9 @@ export class InteriorScene {
   }
 
   dispose(): void {
+    disposeObject3D(this.root);
     this.root.clear();
-    this.floor.geometry.dispose();
-    Object.values(this.materials).forEach(m => m.dispose());
-    Object.values(this.textures).forEach(t => t.dispose());
+    Object.values(this.textures).forEach((texture) => texture.dispose());
   }
 
   private setupLights(): void {

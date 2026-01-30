@@ -85,8 +85,13 @@ const ui = createUI(uiWrapper, {
   onNewSeed: () => inputController.signalNewSeed(),
   onResetCamera: () => inputController.signalResetCamera(),
   onSave: () => {
-    localStorage.setItem(storageKey, serializeSaveState(state));
-    ui.setStatusMessage('Saved to localStorage.');
+    try {
+      localStorage.setItem(storageKey, serializeSaveState(state));
+      ui.setStatusMessage('Saved to localStorage.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      ui.setStatusMessage(`Save failed: ${message}`);
+    }
   },
   onLoad: () => {
     const payload = localStorage.getItem(storageKey);

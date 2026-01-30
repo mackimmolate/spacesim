@@ -276,21 +276,6 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
   const tracker = document.createElement('div');
   tracker.className = 'contract-tracker';
 
-  const personnelButton = document.createElement('button');
-  personnelButton.type = 'button';
-  personnelButton.className = 'screen-launch dock-action';
-  personnelButton.textContent = 'Open Personnel (P)';
-
-  const contractsButton = document.createElement('button');
-  contractsButton.type = 'button';
-  contractsButton.className = 'screen-launch dock-action';
-  contractsButton.textContent = 'Open Contracts (C)';
-
-  const controlsButton = document.createElement('button');
-  controlsButton.type = 'button';
-  controlsButton.className = 'screen-launch dock-action';
-  controlsButton.textContent = 'Open Controls (K)';
-
   const personnelScreen = createScreen('Personnel', 'P');
   const rosterSection = createSection('Roster');
   rosterSection.body.appendChild(opsEfficiency);
@@ -451,10 +436,6 @@ export function createUI(container: HTMLElement, actions: UIActions): UIHandle {
     }
     setScreenOpen(signalScreen, signalOpen);
   }
-
-  personnelButton.addEventListener('click', togglePersonnelScreen);
-  contractsButton.addEventListener('click', toggleContractsScreen);
-  controlsButton.addEventListener('click', toggleControlsScreen);
 
   function isTypingTarget(target: EventTarget | null): boolean {
     if (!(target instanceof HTMLElement)) {

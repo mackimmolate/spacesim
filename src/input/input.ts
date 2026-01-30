@@ -101,15 +101,11 @@ export function createInputController(): {
     pressedKeys.add(event.code);
     switch (event.code) {
       case 'Space':
-      case 'KeyP':
         mergeFlag('togglePause');
         break;
       case 'Period':
       case 'KeyO':
         mergeFlag('stepOnce');
-        break;
-      case 'KeyC':
-        mergeFlag('cycleSpeed');
         break;
       case 'KeyN':
         mergeFlag('newSeed');
@@ -143,7 +139,9 @@ export function createInputController(): {
     if (!(target instanceof HTMLElement)) {
       return false;
     }
-    const container = target.closest('.overlay, .crew-panel, .contracts-panel');
+    const container = target.closest(
+      '.overlay, .crew-panel, .contracts-panel, .screen-card, .screen-body, .log-panel'
+    );
     if (!container) {
       return false;
     }
@@ -162,9 +160,23 @@ export function createInputController(): {
     event.preventDefault();
   }
 
+  function resetInputState(): void {
+    pressedKeys.clear();
+    pendingControls = { ...EMPTY_CONTROLS };
+    pendingInteract = false;
+    pendingExitCommand = false;
+    wheelSteps = 0;
+  }
+
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('wheel', onWheel, { passive: false });
+  window.addEventListener('blur', resetInputState);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      resetInputState();
+    }
+  });
 
   return {
     consume,
